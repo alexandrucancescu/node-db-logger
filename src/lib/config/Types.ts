@@ -17,7 +17,6 @@ export interface AccessLogTransportConfig{
 	skipRules?:SkipRule[];
 }
 
-
 export type AccessLogConfig={
 	toStdout:boolean;
 	skipRules?:SkipRule[];
