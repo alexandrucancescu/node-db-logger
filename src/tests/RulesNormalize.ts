@@ -19,6 +19,7 @@ describe("Rules normalization",()=>{
  		it("should remove priority property if wrong type",handlesPriorityPropertyWrongType)
 	});
  	describe("Conditional properties",()=>{
+ 		it("should remove invalid .if properties",removesInvalidIfProperties);
  		describe(".statusCode property",()=>{
 			it("should remove invalid status codes",removesInvalidStatusCodes);
 		});
@@ -32,8 +33,22 @@ describe("Rules normalization",()=>{
 	});
 });
 
+function removesInvalidIfProperties(){
+	const rules=getMockRules("if",[
+		{statusCode:400}, true , 45, ""
+	]);
+
+	const normalized=normalize(rules);
+
+	expect(normalized[0]).to.have.ownProperty("if");
+
+	expect(normalized[1]).to.not.have.ownProperty("if");
+	expect(normalized[2]).to.not.have.ownProperty("if");
+	expect(normalized[3]).to.not.have.ownProperty("if");
+}
+
 function wrapsTestFunctions(){
-	const rules:RouteRule[]=getMockRules("if",[
+	const rules=getMockRules("if",[
 		{
 			test(){
 				return "Rebel";
