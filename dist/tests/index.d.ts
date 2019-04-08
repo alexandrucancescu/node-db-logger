@@ -1,2 +1,2 @@
-import "./SkipsMinder";
 import "./Utils";
+import "./RulesNormalize";

@@ -4,12 +4,12 @@ import {mimeMatch,cleanUrl,wildcardNumberMatch} from "../lib/util/Generic";
 
 describe("Util functions",()=>{
 	describe("Wildcard mime match",()=>{
-		it("should return true",mimeMatchTrue);
-		it("should return false",mimeMatchFalse);
+		it("should match mime",mimeMatchTrue);
+		it("should not match mime",mimeMatchFalse);
 	});
 	describe("Wildcard number match",()=>{
-		it("should return true",wildcardNumberTrue);
-		it("should return false",wildcardNumberFalse);
+		it("should match number",wildcardNumberTrue);
+		it("should not match mime",wildcardNumberFalse);
 		it("should throw error",wildcardNumberThrow)
 	});
 	describe("Clean URL",()=>{

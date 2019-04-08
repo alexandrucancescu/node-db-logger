@@ -11,12 +11,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const AccessLog_1 = require("../model/AccessLog");
 const onRequestFinished = require("on-finished");
 const Generic_1 = require("../util/Generic");
-const SkipMinder_1 = require("../helper/SkipMinder");
 class AccessLogger {
-    constructor(instanceId, config) {
+    constructor(instanceId) {
         this.instanceId = instanceId;
-        this.config = config;
-        this.skipMinder = new SkipMinder_1.default(config.skipRules);
     }
     middleware() {
         return this.requestHandler.bind(this);

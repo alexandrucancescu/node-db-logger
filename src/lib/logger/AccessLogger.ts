@@ -2,18 +2,14 @@ import AccessLog, {IAccessLog} from "../model/AccessLog";
 import {RequestHandler,Request,Response,NextFunction} from "express"
 import * as onRequestFinished from "on-finished";
 import {cleanUrl, getProcessTimeMs} from "../util/Generic";
-import {AccessLogConfig} from "../config/Types";
-import SkipMinder from "../helper/SkipMinder";
+import AccessLogTransport from "../transports/AccessLogTransport"
 
 export default class AccessLogger{
 	private readonly instanceId:string;
-	private readonly config: AccessLogConfig;
-	private readonly skipMinder: SkipMinder;
+	private readonly transports:AccessLogTransport[];
 
-	constructor(instanceId:string,config:AccessLogConfig) {
+	constructor(instanceId:string) {
 		this.instanceId=instanceId;
-		this.config=config;
-		this.skipMinder=new SkipMinder(config.skipRules);
 	}
 
 

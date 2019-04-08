@@ -1,10 +1,11 @@
 export type Path=string|RegExp;
-export type StatusCodeRule=number|number[]|string|string[];
+
+export type StatusCodeRule=number|string|Array<number|string>;
 export type ContentTypeRule=string|string[];
 
 export interface ConditionalRule{
 	statusCode?:StatusCodeRule;
-	contentTypeRule?:ContentTypeRule;
+	contentType?:ContentTypeRule;
 	test?:()=>boolean;
 }
 

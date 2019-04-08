@@ -5,12 +5,12 @@ const chai_1 = require("chai");
 const Generic_1 = require("../lib/util/Generic");
 mocha_1.describe("Util functions", () => {
     mocha_1.describe("Wildcard mime match", () => {
-        mocha_1.it("should return true", mimeMatchTrue);
-        mocha_1.it("should return false", mimeMatchFalse);
+        mocha_1.it("should match mime", mimeMatchTrue);
+        mocha_1.it("should not match mime", mimeMatchFalse);
     });
     mocha_1.describe("Wildcard number match", () => {
-        mocha_1.it("should return true", wildcardNumberTrue);
-        mocha_1.it("should return false", wildcardNumberFalse);
+        mocha_1.it("should match number", wildcardNumberTrue);
+        mocha_1.it("should not match mime", wildcardNumberFalse);
         mocha_1.it("should throw error", wildcardNumberThrow);
     });
     mocha_1.describe("Clean URL", () => {
