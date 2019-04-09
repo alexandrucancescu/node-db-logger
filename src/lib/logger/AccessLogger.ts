@@ -2,7 +2,7 @@ import AccessLog, {IAccessLog} from "../model/AccessLog";
 import {RequestHandler,Request,Response,NextFunction} from "express"
 import * as onRequestFinished from "on-finished";
 import {cleanUrl, getProcessTimeMs} from "../util/Generic";
-import AccessLogTransport from "../transports/AccessLogTransport"
+import AccessLogTransport from "../transports/access_log/AccessLogTransport"
 
 export default class AccessLogger{
 	private readonly instanceId:string;

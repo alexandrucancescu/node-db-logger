@@ -2,8 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const DebugLog_1 = require("../util/DebugLog");
 const Generic_1 = require("../util/Generic");
+const isGlob = require("is-glob");
+const micromatch_1 = require("micromatch");
 /**
  * Removes rules with invalid paths
+ * Cleans urls
+ * Converts glob pattern paths to regex paths
  * Removes invalid properties from rules
  *
  *
@@ -18,7 +22,12 @@ function normalizeRules(rules) {
         if (!isPathValid(rule.path))
             return false;
         if (typeof rule.path === "string") {
-            rule.path = Generic_1.cleanUrl(rule.path);
+            if (isGlob(rule.path)) {
+                rule.path = micromatch_1.makeRe(rule.path);
+            }
+            else {
+                rule.path = Generic_1.cleanUrl(rule.path);
+            }
         }
         normalizeRuleIfProperty(rule);
         normalizeRuleSetProperty(rule);

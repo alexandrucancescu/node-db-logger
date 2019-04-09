@@ -10,7 +10,8 @@ Logger.configuration.debug=false;
 describe("Rules normalization",()=>{
  	describe("Paths",()=>{
  		it("should remove only rules with invalid paths",removesInvalidPaths);
- 		it("should clean paths URLs",cleansPathsUrls)
+ 		it("should clean paths URLs",cleansPathsUrls);
+		it("should convert glob pattern paths to regex",convertsGlobPathsToRegex);
 	});
  	describe("Skip property",()=>{
 		it("should handle property skip not boolean",handlesSkipNotBoolean)
@@ -152,6 +153,24 @@ function cleansPathsUrls(){
 
 	//URL cleaning still expects valid paths. It will only remove trailing slashes
 	expect(normalized[2].path).to.equal("//");
+}
+
+function convertsGlobPathsToRegex(){
+	const rules:RouteRule[]=[
+		{path:"/users/index"}, //Stays the same
+		{path:"/users/**"}, //Is converted to regex
+		{path:""}, //Is removed
+		{path:"/**/index.html"} //Is converted to regex
+	];
+	const normalized=normalize(rules);
+
+	expect(normalized).to.have.length(3);
+
+	expect(typeof normalized[0].path).to.equal("string");
+	expect(normalized[1].path).to.be.instanceOf(RegExp);
+	expect(normalized[2].path).to.be.instanceOf(RegExp);
+
+	console.log(normalized[2].path);
 }
 
 function handlesSkipNotBoolean(){

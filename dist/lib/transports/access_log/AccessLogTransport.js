@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class AccessLogTransport {
-    constructor(skipMinder) {
-        this.skipMinder = skipMinder;
+    constructor(rulesOverseer) {
+        this.rulesOverseer = rulesOverseer;
     }
     transport(entry) {
         this.handleEntry(entry);

@@ -11,6 +11,7 @@ export interface SetRule {
         headers?: boolean | string[];
         body?: boolean;
         query?: boolean;
+        userData?: boolean;
     };
     response?: {
         body?: boolean;
@@ -23,4 +24,8 @@ export default interface RouteRule {
     set?: SetRule;
     priority?: number;
     skip?: boolean;
+}
+export interface Act {
+    skip: boolean;
+    set: SetRule;
 }

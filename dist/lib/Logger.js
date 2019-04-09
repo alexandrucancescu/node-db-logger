@@ -4,6 +4,7 @@ class Logger {
 }
 Logger.configuration = {
     debug: true,
+    defaultRouteRoute: {},
 };
 exports.default = Logger;
 //# sourceMappingURL=Logger.js.map

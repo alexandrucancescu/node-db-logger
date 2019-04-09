@@ -10,7 +10,7 @@ mocha_1.describe("Util functions", () => {
     });
     mocha_1.describe("Wildcard number match", () => {
         mocha_1.it("should match number", wildcardNumberTrue);
-        mocha_1.it("should not match mime", wildcardNumberFalse);
+        mocha_1.it("should not match number", wildcardNumberFalse);
         mocha_1.it("should throw error", wildcardNumberThrow);
     });
     mocha_1.describe("Clean URL", () => {

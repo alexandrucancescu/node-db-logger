@@ -9,7 +9,7 @@ describe("Util functions",()=>{
 	});
 	describe("Wildcard number match",()=>{
 		it("should match number",wildcardNumberTrue);
-		it("should not match mime",wildcardNumberFalse);
+		it("should not match number",wildcardNumberFalse);
 		it("should throw error",wildcardNumberThrow)
 	});
 	describe("Clean URL",()=>{

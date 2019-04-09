@@ -9,6 +9,7 @@ mocha_1.describe("Rules normalization", () => {
     mocha_1.describe("Paths", () => {
         mocha_1.it("should remove only rules with invalid paths", removesInvalidPaths);
         mocha_1.it("should clean paths URLs", cleansPathsUrls);
+        mocha_1.it("should convert glob pattern paths to regex", convertsGlobPathsToRegex);
     });
     mocha_1.describe("Skip property", () => {
         mocha_1.it("should handle property skip not boolean", handlesSkipNotBoolean);
@@ -123,6 +124,20 @@ function cleansPathsUrls() {
     chai_1.expect(normalized[1].path).to.equal("/url");
     //URL cleaning still expects valid paths. It will only remove trailing slashes
     chai_1.expect(normalized[2].path).to.equal("//");
+}
+function convertsGlobPathsToRegex() {
+    const rules = [
+        { path: "/users/index" },
+        { path: "/users/**" },
+        { path: "" },
+        { path: "/**/index.html" } //Is converted to regex
+    ];
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized).to.have.length(3);
+    chai_1.expect(typeof normalized[0].path).to.equal("string");
+    chai_1.expect(normalized[1].path).to.be.instanceOf(RegExp);
+    chai_1.expect(normalized[2].path).to.be.instanceOf(RegExp);
+    console.log(normalized[2].path);
 }
 function handlesSkipNotBoolean() {
     // @ts-ignore

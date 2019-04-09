@@ -1,9 +1,13 @@
 import RouteRule, {Path} from "../domain/access-log/RouteRule";
 import debug from "../util/DebugLog";
 import {cleanUrl} from "../util/Generic";
+import * as isGlob from "is-glob"
+import {makeRe as globToRegex} from "micromatch"
 
 /**
  * Removes rules with invalid paths
+ * Cleans urls
+ * Converts glob pattern paths to regex paths
  * Removes invalid properties from rules
  *
  *
@@ -18,7 +22,11 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 		if(!isPathValid(rule.path)) return false;
 
 		if(typeof rule.path==="string"){
-			rule.path=cleanUrl(rule.path);
+			if(isGlob(rule.path)){
+				rule.path=globToRegex(rule.path);
+			}else{
+				rule.path=cleanUrl(rule.path);
+			}
 		}
 
 		normalizeRuleIfProperty(rule);

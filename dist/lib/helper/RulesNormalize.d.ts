@@ -1,6 +1,8 @@
 import RouteRule from "../domain/access-log/RouteRule";
 /**
  * Removes rules with invalid paths
+ * Cleans urls
+ * Converts glob pattern paths to regex paths
  * Removes invalid properties from rules
  *
  *
