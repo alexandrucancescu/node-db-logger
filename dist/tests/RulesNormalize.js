@@ -6,6 +6,7 @@ const RulesNormalize_1 = require("../lib/helper/RulesNormalize");
 const Logger_1 = require("../lib/Logger");
 Logger_1.default.configuration.debug = false;
 mocha_1.describe("Rules normalization", () => {
+    mocha_1.it("should remove rules that are null or not objects", removesInvalidRules);
     mocha_1.describe("Paths", () => {
         mocha_1.it("should remove only rules with invalid paths", removesInvalidPaths);
         mocha_1.it("should clean paths URLs", cleansPathsUrls);
@@ -179,6 +180,14 @@ function removesInvalidPaths() {
     chai_1.expect(normalized).to.have.length(1);
     chai_1.expect(normalized[0]).to.haveOwnProperty("path");
     chai_1.expect(normalized[0].path).to.be.instanceOf(RegExp);
+}
+function removesInvalidRules() {
+    const rules = [
+        null, 4450, true, "rule", { path: "/", do: {} }
+    ];
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized).to.have.length(1);
+    chai_1.expect(normalized[0]).to.be.a.instanceOf(Object);
 }
 function getMockDoRules(doKey, values) {
     return values.map(v => {

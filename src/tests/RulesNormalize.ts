@@ -8,6 +8,7 @@ import RouteRule, {Path} from "../lib/domain/access-log/RouteRule";
 Logger.configuration.debug=false;
 
 describe("Rules normalization",()=>{
+	it("should remove rules that are null or not objects",removesInvalidRules);
  	describe("Paths",()=>{
  		it("should remove only rules with invalid paths",removesInvalidPaths);
  		it("should clean paths URLs",cleansPathsUrls);
@@ -225,6 +226,18 @@ function removesInvalidPaths(){
 	expect(normalized).to.have.length(1);
 	expect(normalized[0]).to.haveOwnProperty("path");
 	expect(normalized[0].path).to.be.instanceOf(RegExp);
+}
+
+function removesInvalidRules(){
+	const rules=[
+		null,4450,true,"rule",{path:"/",do:{}}
+	] as RouteRule[];
+
+	const normalized=normalize(rules);
+
+	expect(normalized).to.have.length(1);
+	expect(normalized[0]).to.be.a.instanceOf(Object);
+
 }
 
 function getMockDoRules(doKey:string,values:any[]){

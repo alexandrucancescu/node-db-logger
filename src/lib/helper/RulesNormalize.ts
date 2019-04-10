@@ -22,7 +22,13 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 	let currentRulePriority=0;
 
 	return rules.filter(rule=>{
-		if(!isPathValid(rule.path)) return false;
+		if(typeof rule!=="object" || rule===null){
+			return false;
+		}
+
+		if(!isPathValid(rule.path)){
+			return false;
+		}
 
 		if(typeof rule.path==="string"){
 			if(isGlob(rule.path)){
