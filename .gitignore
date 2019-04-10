@@ -2,3 +2,4 @@
 node_modules
 src/Test.ts
 dist/Test.*
+src/test.html

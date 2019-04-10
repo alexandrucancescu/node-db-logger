@@ -3,7 +3,7 @@ import {expect} from "chai"
 
 import normalize from "../lib/helper/RulesNormalize"
 import Logger from "../lib/Logger";
-import RouteRule from "../lib/domain/access-log/RouteRule";
+import RouteRule, {Path} from "../lib/domain/access-log/RouteRule";
 
 Logger.configuration.debug=false;
 
@@ -12,12 +12,13 @@ describe("Rules normalization",()=>{
  		it("should remove only rules with invalid paths",removesInvalidPaths);
  		it("should clean paths URLs",cleansPathsUrls);
 		it("should convert glob pattern paths to regex",convertsGlobPathsToRegex);
+		it("should correctly resolve glob paths",correctlyResolvesGlobPaths);
 	});
  	describe("Skip property",()=>{
 		it("should handle property skip not boolean",handlesSkipNotBoolean)
 	});
  	describe("Priority property",()=>{
- 		it("should remove priority property if wrong type",handlesPriorityPropertyWrongType)
+ 		it("should add property priority if missing, in correlation with the order defined",addsMissingPriority)
 	});
  	describe("Conditional properties",()=>{
  		it("should remove invalid .if properties",removesInvalidIfProperties);
@@ -88,11 +89,11 @@ function removesInvalidTestFunctions(){
 
 function removesInvalidContentTypeValues(){
 	const rules:RouteRule[]=getMockRules("if",[
-		{contentType:30},
-		{contentType:{x:1}},
-		{contentType:"application/json"},
-		{contentType:[""]},
-		{contentType:[30,"*/*","media/*","",null,new Date()]}
+		{contentType:30}, //0 gets removed
+		{contentType:{x:1}}, //1 gets removed
+		{contentType:"application/json"}, //2 stays
+		{contentType:[""]}, //3 gets removed
+		{contentType:[30,"*/*","media/*","",null,new Date()]}//4 [1] and [2] remain
 	]);
 	const normalized=normalize(rules);
 
@@ -100,11 +101,12 @@ function removesInvalidContentTypeValues(){
 	expect(normalized[1].if).to.not.have.ownProperty("contentType");
 
 	expect(normalized[2].if).to.have.ownProperty("contentType");
-	expect(normalized[3].if).to.have.ownProperty("contentType");
+
+	expect(normalized[3].if).to.not.have.ownProperty("contentType");
+
 	expect(normalized[4].if).to.have.ownProperty("contentType");
 
 	expect(normalized[2].if.contentType).to.equal("application/json");
-	expect(normalized[3].if.contentType).to.have.length(0);
 
 	expect(normalized[4].if.contentType).to.have.length(2);
 	expect(normalized[4].if.contentType).to.deep.equal(["*/*","media/*"]);
@@ -132,15 +134,19 @@ function removesInvalidStatusCodes(){
 
 }
 
-function handlesPriorityPropertyWrongType(){
-	const rules:RouteRule[]=getMockRules("priority",[null,"34",{},55]);
+function addsMissingPriority(){
+	const rules:RouteRule[]=getMockRules("priority",[null,"34",{},55,undefined]);
 	const normalized=normalize(rules);
 
-	expect(normalized[0]).to.not.have.ownProperty("priority");
-	expect(normalized[1]).to.not.have.ownProperty("priority");
-	expect(normalized[2]).to.not.have.ownProperty("priority");
-	expect(normalized[3]).to.have.ownProperty("priority");
+	normalized.forEach(rule=>{
+		expect(rule).to.haveOwnProperty("priority");
+		expect(typeof rule.priority).to.equal("number");
+	});
+	expect(normalized[0].priority).to.equal(0.001);
+	expect(normalized[1].priority).to.equal(0.002);
+	expect(normalized[2].priority).to.equal(0.003);
 	expect(normalized[3].priority).to.equal(55);
+	expect(normalized[4].priority).to.equal(0.004);
 }
 
 function cleansPathsUrls(){
@@ -157,10 +163,10 @@ function cleansPathsUrls(){
 
 function convertsGlobPathsToRegex(){
 	const rules:RouteRule[]=[
-		{path:"/users/index"}, //Stays the same
-		{path:"/users/**"}, //Is converted to regex
-		{path:""}, //Is removed
-		{path:"/**/index.html"} //Is converted to regex
+		{path:"/users/index",do:{}}, //Stays the same
+		{path:"/users/**",do:{}}, //Is converted to regex
+		{path:"",do:{}}, //Is removed
+		{path:"/**/index.html",do:{}} //Is converted to regex
 	];
 	const normalized=normalize(rules);
 
@@ -169,20 +175,46 @@ function convertsGlobPathsToRegex(){
 	expect(typeof normalized[0].path).to.equal("string");
 	expect(normalized[1].path).to.be.instanceOf(RegExp);
 	expect(normalized[2].path).to.be.instanceOf(RegExp);
+}
 
-	console.log(normalized[2].path);
+function correctlyResolvesGlobPaths(){
+	const rules:RouteRule[]=[
+		{path:"/users/**",do:{}}, //Is converted to regex
+		{path:"/**/index.html",do:{}} //Is converted to regex
+	];
+	const normalized=normalize(rules);
+
+	expect(normalized[0].path).to.be.instanceOf(RegExp);
+
+	const first=normalized[0].path as RegExp;
+
+	expect(first.test("/")).to.be.false;
+	expect(first.test("/users")).to.be.false;
+	expect(first.test("")).to.be.false;
+	expect(first.test("/users/available/today")).to.be.true;
+
+	const second=normalized[1].path as RegExp;
+
+	expect(second.test("/")).to.be.false;
+	expect(second.test("")).to.be.false;
+	expect(second.test("/l1/l2/l3/l4")).to.be.false;
+	expect(second.test("/index.html")).to.be.true;
+	expect(second.test("/l1/l2/l3/l4/index.html")).to.be.true;
+	expect(second.test("/l1/index.html")).to.be.true;
 }
 
 function handlesSkipNotBoolean(){
 	// @ts-ignore
-	const rules:RouteRule[]= getMockRules("skip",["false","true",null,true]);
+	const rules:RouteRule[]= getMockDoRules("skip",
+		["false","true",null,true]
+	);
 	const normalized=normalize(rules);
 
 	expect(normalized).to.have.length(4);
-	expect(normalized[0].skip).to.be.false;
-	expect(normalized[1].skip).to.be.false;
-	expect(normalized[2].skip).to.be.false;
-	expect(normalized[3].skip).to.be.true;
+	expect(normalized[0].do.skip).to.be.false;
+	expect(normalized[1].do.skip).to.be.false;
+	expect(normalized[2].do.skip).to.be.false;
+	expect(normalized[3].do.skip).to.be.true;
 }
 
 function removesInvalidPaths(){
@@ -195,9 +227,17 @@ function removesInvalidPaths(){
 	expect(normalized[0].path).to.be.instanceOf(RegExp);
 }
 
+function getMockDoRules(doKey:string,values:any[]){
+	return values.map(v=>{
+		let rule={path:"/",do:{}};
+		rule.do[doKey]=v;
+		return rule;
+	})
+}
+
 function getMockRules(withKey:string,values:any[]):RouteRule[]{
 	return values.map(v=>{
-		let rule={path:"/"};
+		let rule={path:"/",do:{}};
 		rule[withKey]=v;
 		return rule;
 	})

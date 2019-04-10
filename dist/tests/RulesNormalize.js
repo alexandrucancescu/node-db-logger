@@ -10,12 +10,13 @@ mocha_1.describe("Rules normalization", () => {
         mocha_1.it("should remove only rules with invalid paths", removesInvalidPaths);
         mocha_1.it("should clean paths URLs", cleansPathsUrls);
         mocha_1.it("should convert glob pattern paths to regex", convertsGlobPathsToRegex);
+        mocha_1.it("should correctly resolve glob paths", correctlyResolvesGlobPaths);
     });
     mocha_1.describe("Skip property", () => {
         mocha_1.it("should handle property skip not boolean", handlesSkipNotBoolean);
     });
     mocha_1.describe("Priority property", () => {
-        mocha_1.it("should remove priority property if wrong type", handlesPriorityPropertyWrongType);
+        mocha_1.it("should add property priority if missing, in correlation with the order defined", addsMissingPriority);
     });
     mocha_1.describe("Conditional properties", () => {
         mocha_1.it("should remove invalid .if properties", removesInvalidIfProperties);
@@ -79,16 +80,15 @@ function removesInvalidContentTypeValues() {
         { contentType: { x: 1 } },
         { contentType: "application/json" },
         { contentType: [""] },
-        { contentType: [30, "*/*", "media/*", "", null, new Date()] }
+        { contentType: [30, "*/*", "media/*", "", null, new Date()] } //4 [1] and [2] remain
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if).to.not.have.ownProperty("contentType");
     chai_1.expect(normalized[1].if).to.not.have.ownProperty("contentType");
     chai_1.expect(normalized[2].if).to.have.ownProperty("contentType");
-    chai_1.expect(normalized[3].if).to.have.ownProperty("contentType");
+    chai_1.expect(normalized[3].if).to.not.have.ownProperty("contentType");
     chai_1.expect(normalized[4].if).to.have.ownProperty("contentType");
     chai_1.expect(normalized[2].if.contentType).to.equal("application/json");
-    chai_1.expect(normalized[3].if.contentType).to.have.length(0);
     chai_1.expect(normalized[4].if.contentType).to.have.length(2);
     chai_1.expect(normalized[4].if.contentType).to.deep.equal(["*/*", "media/*"]);
 }
@@ -108,14 +108,18 @@ function removesInvalidStatusCodes() {
     chai_1.expect(normalized[4].if.statusCode).to.have.length(2);
     chai_1.expect(normalized[4].if.statusCode).to.deep.equal([500, "4**"]);
 }
-function handlesPriorityPropertyWrongType() {
-    const rules = getMockRules("priority", [null, "34", {}, 55]);
+function addsMissingPriority() {
+    const rules = getMockRules("priority", [null, "34", {}, 55, undefined]);
     const normalized = RulesNormalize_1.default(rules);
-    chai_1.expect(normalized[0]).to.not.have.ownProperty("priority");
-    chai_1.expect(normalized[1]).to.not.have.ownProperty("priority");
-    chai_1.expect(normalized[2]).to.not.have.ownProperty("priority");
-    chai_1.expect(normalized[3]).to.have.ownProperty("priority");
+    normalized.forEach(rule => {
+        chai_1.expect(rule).to.haveOwnProperty("priority");
+        chai_1.expect(typeof rule.priority).to.equal("number");
+    });
+    chai_1.expect(normalized[0].priority).to.equal(0.001);
+    chai_1.expect(normalized[1].priority).to.equal(0.002);
+    chai_1.expect(normalized[2].priority).to.equal(0.003);
     chai_1.expect(normalized[3].priority).to.equal(55);
+    chai_1.expect(normalized[4].priority).to.equal(0.004);
 }
 function cleansPathsUrls() {
     const rules = getMockRules("path", ["/url/", "/url?x=21&y=33", "///"]);
@@ -127,27 +131,46 @@ function cleansPathsUrls() {
 }
 function convertsGlobPathsToRegex() {
     const rules = [
-        { path: "/users/index" },
-        { path: "/users/**" },
-        { path: "" },
-        { path: "/**/index.html" } //Is converted to regex
+        { path: "/users/index", do: {} },
+        { path: "/users/**", do: {} },
+        { path: "", do: {} },
+        { path: "/**/index.html", do: {} } //Is converted to regex
     ];
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized).to.have.length(3);
     chai_1.expect(typeof normalized[0].path).to.equal("string");
     chai_1.expect(normalized[1].path).to.be.instanceOf(RegExp);
     chai_1.expect(normalized[2].path).to.be.instanceOf(RegExp);
-    console.log(normalized[2].path);
+}
+function correctlyResolvesGlobPaths() {
+    const rules = [
+        { path: "/users/**", do: {} },
+        { path: "/**/index.html", do: {} } //Is converted to regex
+    ];
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].path).to.be.instanceOf(RegExp);
+    const first = normalized[0].path;
+    chai_1.expect(first.test("/")).to.be.false;
+    chai_1.expect(first.test("/users")).to.be.false;
+    chai_1.expect(first.test("")).to.be.false;
+    chai_1.expect(first.test("/users/available/today")).to.be.true;
+    const second = normalized[1].path;
+    chai_1.expect(second.test("/")).to.be.false;
+    chai_1.expect(second.test("")).to.be.false;
+    chai_1.expect(second.test("/l1/l2/l3/l4")).to.be.false;
+    chai_1.expect(second.test("/index.html")).to.be.true;
+    chai_1.expect(second.test("/l1/l2/l3/l4/index.html")).to.be.true;
+    chai_1.expect(second.test("/l1/index.html")).to.be.true;
 }
 function handlesSkipNotBoolean() {
     // @ts-ignore
-    const rules = getMockRules("skip", ["false", "true", null, true]);
+    const rules = getMockDoRules("skip", ["false", "true", null, true]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized).to.have.length(4);
-    chai_1.expect(normalized[0].skip).to.be.false;
-    chai_1.expect(normalized[1].skip).to.be.false;
-    chai_1.expect(normalized[2].skip).to.be.false;
-    chai_1.expect(normalized[3].skip).to.be.true;
+    chai_1.expect(normalized[0].do.skip).to.be.false;
+    chai_1.expect(normalized[1].do.skip).to.be.false;
+    chai_1.expect(normalized[2].do.skip).to.be.false;
+    chai_1.expect(normalized[3].do.skip).to.be.true;
 }
 function removesInvalidPaths() {
     const rules = [{ path: null }, { path: 44 }, { path: "" }, { path: /\/.*/g }];
@@ -157,9 +180,16 @@ function removesInvalidPaths() {
     chai_1.expect(normalized[0]).to.haveOwnProperty("path");
     chai_1.expect(normalized[0].path).to.be.instanceOf(RegExp);
 }
+function getMockDoRules(doKey, values) {
+    return values.map(v => {
+        let rule = { path: "/", do: {} };
+        rule.do[doKey] = v;
+        return rule;
+    });
+}
 function getMockRules(withKey, values) {
     return values.map(v => {
-        let rule = { path: "/" };
+        let rule = { path: "/", do: {} };
         rule[withKey] = v;
         return rule;
     });

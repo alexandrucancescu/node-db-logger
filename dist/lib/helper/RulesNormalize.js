@@ -18,6 +18,7 @@ function normalizeRules(rules) {
     if (!Array.isArray(rules)) {
         return [];
     }
+    let currentRulePriority = 0;
     return rules.filter(rule => {
         if (!isPathValid(rule.path))
             return false;
@@ -29,17 +30,14 @@ function normalizeRules(rules) {
                 rule.path = Generic_1.cleanUrl(rule.path);
             }
         }
-        normalizeRuleIfProperty(rule);
-        normalizeRuleSetProperty(rule);
-        if (rule.skip !== undefined) {
-            //Ensure it is a boolean
-            rule.skip = (rule.skip === true);
-        }
-        if (rule.priority !== undefined) {
-            if (typeof rule.priority !== "number") {
-                typeMismatchDebug(rule, "priority", "number", typeof rule.priority);
-                delete rule.priority;
+        normalizeConditionals(rule);
+        normalizeAct(rule);
+        if (typeof rule.priority !== "number" || isNaN(rule.priority)) {
+            if (typeof rule.priority !== "undefined" || isNaN(rule.priority)) {
+                typeMismatchDebug(rule, "priority", "number", `typeof rule.priority and value ${rule.priority}`);
             }
+            currentRulePriority += 0.001;
+            rule.priority = currentRulePriority;
         }
         return true;
     });
@@ -70,7 +68,7 @@ function wrapBooleanFunction(func) {
         }
     };
 }
-function normalizeRuleIfProperty(rule) {
+function normalizeConditionals(rule) {
     if (rule.if !== undefined) {
         //Ensure is a valid object or delete
         if (typeof rule.if !== "object" || rule.if === null) {
@@ -94,6 +92,10 @@ function normalizeRuleIfProperty(rule) {
             if (rule.if.contentType !== undefined) {
                 if (Array.isArray(rule.if.contentType)) {
                     rule.if.contentType = rule.if.contentType.filter(ct => typeof ct === "string" && ct.length > 0);
+                    if (rule.if.contentType.length < 1) {
+                        //Delete if no rules left after filtering
+                        delete rule.if.contentType;
+                    }
                 }
                 else if (typeof rule.if.contentType !== "string") {
                     typeMismatchDebug(rule, "if.contentType", "string || string[]", rule.if.contentType);
@@ -103,11 +105,14 @@ function normalizeRuleIfProperty(rule) {
             //Validates if.statusCode rule/rules
             //Makes sure to only keep wildcard string or numbers that can represent http status codes
             if (rule.if.statusCode !== undefined) {
-                if (rule.if.statusCode instanceof Array) {
+                if (Array.isArray(rule.if.statusCode)) {
                     rule.if.statusCode = rule.if.statusCode.filter(sc => {
                         return (typeof sc === "string" && sc.length === 3) ||
                             (typeof sc === "number" && sc > 99 && sc < 600);
                     });
+                    if (rule.if.statusCode.length < 1) {
+                        delete rule.if.statusCode;
+                    }
                 }
                 else if (typeof rule.if.statusCode === "string") {
                     if (rule.if.statusCode.length !== 3) {
@@ -116,6 +121,7 @@ function normalizeRuleIfProperty(rule) {
                     }
                 }
                 else if (typeof rule.if.statusCode === "number") {
+                    //Delete if not a valid http status code
                     if (rule.if.statusCode < 100 || rule.if.statusCode >= 600) {
                         DebugLog_1.default.error(`On rule with path '${rule.path}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
                         delete rule.if.statusCode;
@@ -128,15 +134,21 @@ function normalizeRuleIfProperty(rule) {
         }
     }
 }
-function normalizeRuleSetProperty(rule) {
-    if (rule.set !== undefined || rule.set === null) {
-        //Ensure is a valid object or deletes
-        if (typeof rule.set !== "object") {
-            typeMismatchDebug(rule, "set", "object", rule.set);
-            delete rule.set;
+function normalizeAct(rule) {
+    if (rule.do !== undefined || rule.do === null) {
+        //Ensure is a valid object or delete
+        if (typeof rule.do !== "object") {
+            typeMismatchDebug(rule, "set", "object", rule.do);
+            delete rule.do;
         }
-        else if (Object.keys(rule.set).length < 1) {
-            delete rule.set;
+        else if (Object.keys(rule.do).length < 1) {
+            delete rule.do;
+        }
+        else {
+            if (rule.do.skip !== undefined) {
+                //Ensure it is a boolean
+                rule.do.skip = (rule.do.skip === true);
+            }
         }
     }
 }

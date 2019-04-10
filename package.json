@@ -9,14 +9,11 @@
   "author": "Alexandru Cancescu",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.16.4",
     "is-glob": "^4.0.1",
     "lodash.merge": "^4.6.1",
     "micromatch": "^3.1.10",
     "mongoose": "^5.4.22",
-    "morgan": "^1.9.1",
-    "on-finished": "^2.3.0",
-    "winston": "^3.2.1"
+    "on-finished": "^2.3.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -28,9 +25,13 @@
     "@types/node": "^11.13.0",
     "@types/on-finished": "^2.3.1",
     "chai": "^4.2.0",
+    "express": "^4.16.4",
+    "flatted": "^2.0.0",
     "mocha": "^6.1.1",
+    "morgan": "^1.9.1",
     "ts-node": "^8.0.3",
-    "typescript": "^3.4.2"
+    "typescript": "^3.4.2",
+    "winston": "^3.2.1"
   },
   "repository": {
     "type": "git",

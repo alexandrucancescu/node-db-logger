@@ -1,4 +1,4 @@
-export declare type Path = string | RegExp;
+export declare type Path = RegExp | string;
 export declare type StatusCodeRule = number | string | Array<number | string>;
 export declare type ContentTypeRule = string | string[];
 export interface ConditionalRule {
@@ -18,14 +18,13 @@ export interface SetRule {
         headers?: boolean | string[];
     };
 }
+export interface Act {
+    skip?: boolean;
+    set?: SetRule;
+}
 export default interface RouteRule {
     path: Path;
     if?: ConditionalRule;
-    set?: SetRule;
     priority?: number;
-    skip?: boolean;
-}
-export interface Act {
-    skip: boolean;
-    set: SetRule;
+    do: Act;
 }

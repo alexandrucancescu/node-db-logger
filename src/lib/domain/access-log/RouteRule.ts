@@ -1,4 +1,4 @@
-export type Path=string|RegExp;
+export type Path=RegExp|string;
 
 export type StatusCodeRule=number|string|Array<number|string>;
 export type ContentTypeRule=string|string[];
@@ -22,15 +22,14 @@ export interface SetRule{
 	}
 }
 
+export interface Act{
+	skip?:boolean;
+	set?:SetRule;
+}
+
 export default interface RouteRule{
 	path:Path;
 	if?:ConditionalRule;
-	set?:SetRule;
 	priority?:number;
-	skip?:boolean;
-}
-
-export interface Act{
-	skip:boolean;
-	set:SetRule;
+	do:Act,
 }

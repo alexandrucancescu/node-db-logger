@@ -4,6 +4,8 @@ import debug from "../util/DebugLog"
 import normalizeRules from "./RulesNormalize";
 import {Request,Response} from "express"
 
+
+
 export default class RulesOverseer{
 	private readonly rules:RouteRule[];
 
