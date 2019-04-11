@@ -1,8 +1,12 @@
-import RouteRule, {Path} from "../domain/access-log/RouteRule";
+import PublicRouteRule, {Path} from "../domain/access-log/RouteRule";
 import debug from "../util/DebugLog";
 import {cleanUrl} from "../util/Generic";
 import * as isGlob from "is-glob"
 import {makeRe as globToRegex} from "micromatch"
+
+type RouteRule=PublicRouteRule&{
+	_originalPath?:Path
+}
 
 /**
  * Removes rules with invalid paths
@@ -30,6 +34,9 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 			return false;
 		}
 
+		//Save the original path for debugging purposes
+		rule._originalPath=rule.path;
+
 		if(typeof rule.path==="string"){
 			if(isGlob(rule.path)){
 				rule.path=globToRegex(rule.path);
@@ -42,8 +49,8 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 		normalizeAct(rule);
 
 		if(typeof rule.priority!=="number" || isNaN(rule.priority)){
-			if(typeof rule.priority!=="undefined" || isNaN(rule.priority)){
-				typeMismatchDebug(rule,"priority","number",`typeof rule.priority and value ${rule.priority}`);
+			if(rule.priority!==undefined || (typeof rule.priority==="number" && isNaN(rule.priority)) ){
+				typeMismatchDebug(rule,"priority","number",rule.priority);
 			}
 			currentRulePriority+=0.001;
 			rule.priority=currentRulePriority;
@@ -97,6 +104,14 @@ function normalizeConditionals(rule:RouteRule){
 				}
 			}
 
+			//Ensures if.requestUnfulfilled is a boolean or deletes it
+			if(rule.if.requestUnfulfilled!==undefined){
+				if(typeof rule.if.requestUnfulfilled!=="boolean"){
+					typeMismatchDebug(rule,"if.requestUnfulfilled","boolean",rule.if.requestUnfulfilled);
+					delete rule.if.requestUnfulfilled;
+				}
+			}
+
 			//Validates if.contentType rule/rules.
 			//Keeps only string entries that have a length>0
 			if(rule.if.contentType!==undefined){
@@ -110,6 +125,8 @@ function normalizeConditionals(rule:RouteRule){
 				}else if(typeof rule.if.contentType!=="string"){
 					typeMismatchDebug(rule,"if.contentType","string || string[]",rule.if.contentType);
 					delete rule.if.contentType
+				}else if(rule.if.contentType.length<1){
+					delete rule.if.contentType;
 				}
 			}
 
@@ -126,18 +143,30 @@ function normalizeConditionals(rule:RouteRule){
 					}
 				}else if(typeof rule.if.statusCode==="string"){
 					if(rule.if.statusCode.length!==3){
-						debug.error(`On rule with path '${rule.path}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
+						debug.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
 						delete rule.if.statusCode;
 					}
 				}else if(typeof rule.if.statusCode==="number"){
 					//Delete if not a valid http status code
 					if(rule.if.statusCode<100 || rule.if.statusCode >=600){
-						debug.error(`On rule with path '${rule.path}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
+						debug.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
 						delete rule.if.statusCode;
 					}
 				}else{
 					typeMismatchDebug(rule,"if.statusCode","string || number || string[] || number[]",typeof rule.if.statusCode);
 				}
+			}
+
+			const hasAnyCondition=[
+				rule.if.statusCode,
+				rule.if.contentType,
+				rule.if.contentType,
+				rule.if.test
+			].some(c=>c!==undefined);
+
+			//If it does not have any condition delete it altogether
+			if(!hasAnyCondition){
+				delete rule.if;
 			}
 		}
 	}
@@ -161,5 +190,5 @@ function normalizeAct(rule:RouteRule){
 }
 
 function typeMismatchDebug(rule:RouteRule,property:string,shouldBe:string,is:any){
-	debug.error(`On rule with path '${rule.path}'. Property '${property}' should be of type ${shouldBe}, instead is ${typeof is}`);
+	debug.error(`On rule with path '${rule._originalPath}'. Property '${property}' should be of type ${shouldBe}, instead is a ${typeof is} with value ${is}`);
 }

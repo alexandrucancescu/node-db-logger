@@ -21,6 +21,7 @@ mocha_1.describe("Rules normalization", () => {
     });
     mocha_1.describe("Conditional properties", () => {
         mocha_1.it("should remove invalid .if properties", removesInvalidIfProperties);
+        mocha_1.it("should remove .if properties with invalid conditions or empty object", removesEmptyIfProperties);
         mocha_1.describe(".statusCode property", () => {
             mocha_1.it("should remove invalid status codes", removesInvalidStatusCodes);
         });
@@ -42,6 +43,16 @@ function removesInvalidIfProperties() {
     chai_1.expect(normalized[1]).to.not.have.ownProperty("if");
     chai_1.expect(normalized[2]).to.not.have.ownProperty("if");
     chai_1.expect(normalized[3]).to.not.have.ownProperty("if");
+}
+function removesEmptyIfProperties() {
+    const rules = getMockRules("if", [
+        { statusCode: [] }, { statusCode: ["1", null] },
+        { statusCode: 0, test: true, contentType: "" }, {}, null
+    ]);
+    const normalized = RulesNormalize_1.default(rules);
+    normalized.forEach((rule, index) => {
+        chai_1.expect(rule, `Rule with at [${index}]`).to.not.have.property("if");
+    });
 }
 function wrapsTestFunctions() {
     const rules = getMockRules("if", [
@@ -110,17 +121,26 @@ function removesInvalidStatusCodes() {
     chai_1.expect(normalized[4].if.statusCode).to.deep.equal([500, "4**"]);
 }
 function addsMissingPriority() {
-    const rules = getMockRules("priority", [null, "34", {}, 55, undefined]);
+    const rules = [];
+    for (let i = 0; i < 20; i++) {
+        rules.push({ path: "/", do: {} });
+    }
     const normalized = RulesNormalize_1.default(rules);
-    normalized.forEach(rule => {
+    for (let i = 0; i < normalized.length; i++) {
+        const rule = normalized[i];
         chai_1.expect(rule).to.haveOwnProperty("priority");
-        chai_1.expect(typeof rule.priority).to.equal("number");
-    });
-    chai_1.expect(normalized[0].priority).to.equal(0.001);
-    chai_1.expect(normalized[1].priority).to.equal(0.002);
-    chai_1.expect(normalized[2].priority).to.equal(0.003);
-    chai_1.expect(normalized[3].priority).to.equal(55);
-    chai_1.expect(normalized[4].priority).to.equal(0.004);
+        chai_1.expect(rule.priority).to.be.a("number");
+        if (i === 0) {
+            chai_1.expect(rule.priority).to.be.greaterThan(0);
+            continue;
+        }
+        else {
+            chai_1.expect(rule.priority).to.be.greaterThan(normalized[i - 1].priority);
+        }
+        if (i === normalized.length - 1) { //last one
+            chai_1.expect(rule.priority).to.be.lessThan(1);
+        }
+    }
 }
 function cleansPathsUrls() {
     const rules = getMockRules("path", ["/url/", "/url?x=21&y=33", "///"]);
@@ -139,7 +159,7 @@ function convertsGlobPathsToRegex() {
     ];
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized).to.have.length(3);
-    chai_1.expect(typeof normalized[0].path).to.equal("string");
+    chai_1.expect(normalized[0].path).to.be.a("string");
     chai_1.expect(normalized[1].path).to.be.instanceOf(RegExp);
     chai_1.expect(normalized[2].path).to.be.instanceOf(RegExp);
 }

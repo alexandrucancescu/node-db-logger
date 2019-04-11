@@ -4,6 +4,7 @@ export declare type ContentTypeRule = string | string[];
 export interface ConditionalRule {
     statusCode?: StatusCodeRule;
     contentType?: ContentTypeRule;
+    requestUnfulfilled?: boolean;
     test?: () => boolean;
 }
 export interface SetRule {

@@ -1,8 +1,10 @@
 import { RequestHandler } from "express";
+import RouteRule from "../domain/access-log/RouteRule";
 export default class AccessLogger {
     private readonly transports;
-    constructor();
-    expressMiddleware(): RequestHandler;
+    private readonly rulesOverseer;
+    constructor(rules: RouteRule[]);
+    readonly express: RequestHandler;
     private requestHandler;
     private requestFinished;
 }

@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const onRequestFinished = require("on-finished");
 const Generic_1 = require("../util/Generic");
+const RulesOverseer_1 = require("../helper/RulesOverseer");
 class AccessLogger {
-    constructor() {
+    constructor(rules) {
+        this.rulesOverseer = new RulesOverseer_1.default(rules);
     }
-    expressMiddleware() {
+    get express() {
         return this.requestHandler.bind(this);
     }
     requestHandler(req, res, next) {
@@ -15,6 +17,7 @@ class AccessLogger {
     }
     requestFinished(req, res, start_ms) {
         const response_time_ms = Generic_1.getProcessTimeMs() - start_ms;
+        const matchedPaths = this.rulesOverseer.computeRouteAct(req, res);
     }
 }
 exports.default = AccessLogger;

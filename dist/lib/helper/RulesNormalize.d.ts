@@ -1,4 +1,7 @@
-import RouteRule from "../domain/access-log/RouteRule";
+import PublicRouteRule, { Path } from "../domain/access-log/RouteRule";
+declare type RouteRule = PublicRouteRule & {
+    _originalPath?: Path;
+};
 /**
  * Removes rules with invalid paths
  * Cleans urls
@@ -10,3 +13,4 @@ import RouteRule from "../domain/access-log/RouteRule";
  * @returns the valid rules
  */
 export default function normalizeRules(rules: RouteRule[]): RouteRule[];
+export {};

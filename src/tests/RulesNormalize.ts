@@ -23,6 +23,7 @@ describe("Rules normalization",()=>{
 	});
  	describe("Conditional properties",()=>{
  		it("should remove invalid .if properties",removesInvalidIfProperties);
+ 		it("should remove .if properties with invalid conditions or empty object",removesEmptyIfProperties);
  		describe(".statusCode property",()=>{
 			it("should remove invalid status codes",removesInvalidStatusCodes);
 		});
@@ -48,6 +49,19 @@ function removesInvalidIfProperties(){
 	expect(normalized[1]).to.not.have.ownProperty("if");
 	expect(normalized[2]).to.not.have.ownProperty("if");
 	expect(normalized[3]).to.not.have.ownProperty("if");
+}
+
+function removesEmptyIfProperties(){
+	const rules=getMockRules("if",[
+		{statusCode:[]}, {statusCode:["1",null]},
+		{statusCode:0,test:true,contentType:""},{},null
+	]);
+
+	const normalized=normalize(rules);
+
+	normalized.forEach((rule,index)=>{
+		expect(rule,`Rule with at [${index}]`).to.not.have.property("if");
+	})
 }
 
 function wrapsTestFunctions(){
@@ -136,18 +150,29 @@ function removesInvalidStatusCodes(){
 }
 
 function addsMissingPriority(){
-	const rules:RouteRule[]=getMockRules("priority",[null,"34",{},55,undefined]);
+	const rules=[] as RouteRule[];
+
+	for(let i=0;i<20;i++){
+		rules.push({path:"/",do:{}});
+	}
+
 	const normalized=normalize(rules);
 
-	normalized.forEach(rule=>{
+	for(let i=0;i<normalized.length;i++){
+		const rule=normalized[i];
 		expect(rule).to.haveOwnProperty("priority");
-		expect(typeof rule.priority).to.equal("number");
-	});
-	expect(normalized[0].priority).to.equal(0.001);
-	expect(normalized[1].priority).to.equal(0.002);
-	expect(normalized[2].priority).to.equal(0.003);
-	expect(normalized[3].priority).to.equal(55);
-	expect(normalized[4].priority).to.equal(0.004);
+		expect(rule.priority).to.be.a("number");
+
+		if(i===0){
+			expect(rule.priority).to.be.greaterThan(0);
+			continue;
+		}else{
+			expect(rule.priority).to.be.greaterThan(normalized[i-1].priority);
+		}
+		if(i===normalized.length-1){ //last one
+			expect(rule.priority).to.be.lessThan(1);
+		}
+	}
 }
 
 function cleansPathsUrls(){
@@ -173,7 +198,7 @@ function convertsGlobPathsToRegex(){
 
 	expect(normalized).to.have.length(3);
 
-	expect(typeof normalized[0].path).to.equal("string");
+	expect(normalized[0].path).to.be.a("string");
 	expect(normalized[1].path).to.be.instanceOf(RegExp);
 	expect(normalized[2].path).to.be.instanceOf(RegExp);
 }
