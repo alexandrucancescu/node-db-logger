@@ -1,8 +1,8 @@
-import RouteRule, {StatusCodeRule} from "../domain/access-log/RouteRule";
+import RouteRule, {Act, StatusCodeRule} from "../domain/access-log/RouteRule";
 import {cleanUrl, wildcardNumberMatch} from "../util/Generic";
 import normalizeRules from "./RulesNormalize";
 import {Request,Response} from "express"
-import * as merge from "lodash.merge"
+import * as mergeWith from "lodash.mergewith"
 
 export default class RulesOverseer{
 	private readonly rules:RouteRule[];
@@ -11,17 +11,25 @@ export default class RulesOverseer{
 		this.rules=normalizeRules(rules);
 	}
 
-	public computeRouteAct(req:Request,res:Response){
+	public computeRouteAct(req:Request,res:Response):Act{
 		const path=cleanUrl(req.originalUrl||req.url);
-		console.log("URL",path,"code",res.statusCode,"mime",res.get("content-type"));
-		const matchedRules=this.getRulesMatched(path,req,res);
-		console.log(matchedRules.map((r:any)=>r._originalPath));
-		// console.log(matchedRules);
-		const mergedAct=merge(...matchedRules.map(r=>r.do));
-		console.log(mergedAct);
+		console.log("URL: ",path,"| code:",res.statusCode,"| mime:",res.get("content-type"));
+		const matchedRules=this.getRulesMatched(path,res).sort(priorityCompare);
+
+		const acts=matchedRules.map(rule=>rule.do);
+
+		let mergedAct=null;
+
+		if(acts.length===1){
+			mergedAct=acts[0];
+		}else{
+			mergedAct=mergeWith(...acts,(obj,src)=>Array.isArray(src) ? src : undefined);
+		}
+
+		return mergedAct;
 	}
 
-	private getRulesMatched(path:string,req:Request,res:Response):RouteRule[]{
+	private getRulesMatched(path:string,res:Response):RouteRule[]{
 		return this.rules.filter(rule=>{
 			if(!pathMatches(path,rule)){
 				return false;
@@ -53,7 +61,6 @@ function conditionsSatisfied(res:Response,rule:RouteRule):boolean{
 
 		}
 	}
-
 	if(conditions.requestUnfulfilled && !res.headersSent){
 		return true;
 	}

@@ -2,21 +2,26 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const Generic_1 = require("../util/Generic");
 const RulesNormalize_1 = require("./RulesNormalize");
-const merge = require("lodash.merge");
+const mergeWith = require("lodash.mergewith");
 class RulesOverseer {
     constructor(rules) {
         this.rules = RulesNormalize_1.default(rules);
     }
     computeRouteAct(req, res) {
         const path = Generic_1.cleanUrl(req.originalUrl || req.url);
-        console.log("URL", path, "code", res.statusCode, "mime", res.get("content-type"));
-        const matchedRules = this.getRulesMatched(path, req, res);
-        console.log(matchedRules.map((r) => r._originalPath));
-        // console.log(matchedRules);
-        const mergedAct = merge(...matchedRules.map(r => r.do));
-        console.log(mergedAct);
+        console.log("URL: ", path, "| code:", res.statusCode, "| mime:", res.get("content-type"));
+        const matchedRules = this.getRulesMatched(path, res).sort(priorityCompare);
+        const acts = matchedRules.map(rule => rule.do);
+        let mergedAct = null;
+        if (acts.length === 1) {
+            mergedAct = acts[0];
+        }
+        else {
+            mergedAct = mergeWith(...acts, (obj, src) => Array.isArray(src) ? src : undefined);
+        }
+        return mergedAct;
     }
-    getRulesMatched(path, req, res) {
+    getRulesMatched(path, res) {
         return this.rules.filter(rule => {
             if (!pathMatches(path, rule)) {
                 return false;

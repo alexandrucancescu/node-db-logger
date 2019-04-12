@@ -11,6 +11,7 @@
   "dependencies": {
     "is-glob": "^4.0.1",
     "lodash.merge": "^4.6.1",
+    "lodash.mergewith": "^4.6.1",
     "micromatch": "^3.1.10",
     "mongoose": "^5.4.22",
     "on-finished": "^2.3.0"
