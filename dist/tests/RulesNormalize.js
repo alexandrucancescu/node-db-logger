@@ -51,7 +51,7 @@ function removesEmptyIfProperties() {
     ]);
     const normalized = RulesNormalize_1.default(rules);
     normalized.forEach((rule, index) => {
-        chai_1.expect(rule, `Rule with at [${index}]`).to.not.have.property("if");
+        chai_1.expect(rule, `Rule at [${index}]`).to.not.have.property("if");
     });
 }
 function wrapsTestFunctions() {
@@ -74,11 +74,11 @@ function wrapsTestFunctions() {
     chai_1.expect(normalized[1].if.test()).to.equal(false);
 }
 function removesInvalidTestFunctions() {
-    const rules = getMockRules("if", [
-        { test: null },
-        { test: new Date() },
-        { test: () => { } },
-        { test: "do{}while()" },
+    const rules = getMockIfRules("test", [
+        null,
+        new Date(),
+        () => { },
+        "do{}while()",
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if).to.not.have.ownProperty("test");
@@ -87,12 +87,12 @@ function removesInvalidTestFunctions() {
     chai_1.expect(normalized[2].if).to.have.ownProperty("test");
 }
 function removesInvalidContentTypeValues() {
-    const rules = getMockRules("if", [
-        { contentType: 30 },
-        { contentType: { x: 1 } },
-        { contentType: "application/json" },
-        { contentType: [""] },
-        { contentType: [30, "*/*", "media/*", "", null, new Date()] } //4 [1] and [2] remain
+    const rules = getMockIfRules("contentType", [
+        30,
+        { x: 1 },
+        "application/json",
+        [""],
+        [30, "*/*", "media/*", "", null, new Date()] //[1] and [2] remain
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if).to.not.have.ownProperty("contentType");
@@ -105,9 +105,8 @@ function removesInvalidContentTypeValues() {
     chai_1.expect(normalized[4].if.contentType).to.deep.equal(["*/*", "media/*"]);
 }
 function removesInvalidStatusCodes() {
-    const rules = getMockRules("if", [
-        { statusCode: 30 }, { statusCode: "4500" }, { statusCode: 300 }, { statusCode: ["4**"] },
-        { statusCode: [30, 500, "4**", "5*", null, new Date()] }
+    const rules = getMockIfRules("statusCode", [
+        30, 4500, 300, ["4**"], [30, 500, "4**", "5*", null, new Date()]
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if).to.not.have.ownProperty("statusCode");
@@ -194,12 +193,15 @@ function handlesSkipNotBoolean() {
     chai_1.expect(normalized[3].do.skip).to.be.true;
 }
 function removesInvalidPaths() {
-    const rules = [{ path: null }, { path: 44 }, { path: "" }, { path: /\/.*/g }];
-    // @ts-ignore
+    const rules = getMockRules("path", [
+        45, true, null, undefined, "/users", /\/.*/,
+    ]);
     const normalized = RulesNormalize_1.default(rules);
-    chai_1.expect(normalized).to.have.length(1);
+    chai_1.expect(normalized).to.have.length(2);
     chai_1.expect(normalized[0]).to.haveOwnProperty("path");
-    chai_1.expect(normalized[0].path).to.be.instanceOf(RegExp);
+    chai_1.expect(normalized[1]).to.haveOwnProperty("path");
+    chai_1.expect(normalized[0].path).to.be.a("string");
+    chai_1.expect(normalized[1].path).to.be.instanceOf(RegExp);
 }
 function removesInvalidRules() {
     const rules = [
@@ -208,6 +210,20 @@ function removesInvalidRules() {
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized).to.have.length(1);
     chai_1.expect(normalized[0]).to.be.a.instanceOf(Object);
+}
+function getMockIfRules(withIfKey, values) {
+    return values.map(v => {
+        let mock = {
+            path: "/",
+            if: {
+                requestUnfulfilled: true,
+                statusCode: "5**",
+            },
+            do: { skip: false }
+        };
+        mock.if[withIfKey] = v;
+        return mock;
+    });
 }
 function getMockDoRules(doKey, values) {
     return values.map(v => {

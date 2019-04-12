@@ -3,7 +3,7 @@ import {expect} from "chai"
 
 import normalize from "../lib/helper/RulesNormalize"
 import Logger from "../lib/Logger";
-import RouteRule, {Path} from "../lib/domain/access-log/RouteRule";
+import RouteRule from "../lib/domain/access-log/RouteRule";
 
 Logger.configuration.debug=false;
 
@@ -60,7 +60,7 @@ function removesEmptyIfProperties(){
 	const normalized=normalize(rules);
 
 	normalized.forEach((rule,index)=>{
-		expect(rule,`Rule with at [${index}]`).to.not.have.property("if");
+		expect(rule,`Rule at [${index}]`).to.not.have.property("if");
 	})
 }
 
@@ -87,11 +87,11 @@ function wrapsTestFunctions(){
 }
 
 function removesInvalidTestFunctions(){
-	const rules:RouteRule[]=getMockRules("if",[
-		{test:null},
-		{test:new Date()},
-		{test:()=>{}},
-		{test:"do{}while()"},
+	const rules:RouteRule[]=getMockIfRules("test",[
+		null,
+		new Date(),
+		()=>{},
+		"do{}while()",
 	]);
 	const normalized=normalize(rules);
 
@@ -103,15 +103,15 @@ function removesInvalidTestFunctions(){
 }
 
 function removesInvalidContentTypeValues(){
-	const rules:RouteRule[]=getMockRules("if",[
-		{contentType:30}, //0 gets removed
-		{contentType:{x:1}}, //1 gets removed
-		{contentType:"application/json"}, //2 stays
-		{contentType:[""]}, //3 gets removed
-		{contentType:[30,"*/*","media/*","",null,new Date()]}//4 [1] and [2] remain
+	const rules:RouteRule[]=getMockIfRules("contentType",[
+		30, //gets removed
+		{x:1}, //gets removed
+		"application/json", //stays
+		[""], //gets removed
+		[30,"*/*","media/*","",null,new Date()]//[1] and [2] remain
 	]);
 	const normalized=normalize(rules);
-
+	
 	expect(normalized[0].if).to.not.have.ownProperty("contentType");
 	expect(normalized[1].if).to.not.have.ownProperty("contentType");
 
@@ -128,9 +128,8 @@ function removesInvalidContentTypeValues(){
 }
 
 function removesInvalidStatusCodes(){
-	const rules:RouteRule[]=getMockRules("if",[
-		{statusCode:30},{statusCode:"4500"},{statusCode:300},{statusCode:["4**"]},
-		{statusCode:[30,500,"4**","5*",null,new Date()]}
+	const rules:RouteRule[]=getMockIfRules("statusCode",[
+		30,4500,300,["4**"],[30,500,"4**","5*",null,new Date()]
 	]);
 	const normalized=normalize(rules);
 
@@ -244,13 +243,18 @@ function handlesSkipNotBoolean(){
 }
 
 function removesInvalidPaths(){
-	const rules=[{path:null},{path:44},{path:""},{path:/\/.*/g}];
-	// @ts-ignore
+	const rules=getMockRules("path",[
+		45,true,null,undefined,"/users",/\/.*/,
+	]);
+
 	const normalized=normalize(rules);
 
-	expect(normalized).to.have.length(1);
+	expect(normalized).to.have.length(2);
 	expect(normalized[0]).to.haveOwnProperty("path");
-	expect(normalized[0].path).to.be.instanceOf(RegExp);
+	expect(normalized[1]).to.haveOwnProperty("path");
+
+	expect(normalized[0].path).to.be.a("string");
+	expect(normalized[1].path).to.be.instanceOf(RegExp);
 }
 
 function removesInvalidRules(){
@@ -263,6 +267,21 @@ function removesInvalidRules(){
 	expect(normalized).to.have.length(1);
 	expect(normalized[0]).to.be.a.instanceOf(Object);
 
+}
+
+function getMockIfRules(withIfKey:string,values:any[]):RouteRule[]{
+	return values.map(v=>{
+		let mock={
+			path:"/",
+			if:{
+				requestUnfulfilled:true,
+				statusCode:"5**",
+			},
+			do:{skip:false}
+		} as RouteRule;
+		mock.if[withIfKey]=v;
+		return mock;
+	})
 }
 
 function getMockDoRules(doKey:string,values:any[]){

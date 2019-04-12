@@ -38,6 +38,10 @@ function normalizeRules(rules) {
         }
         normalizeConditionals(rule);
         normalizeAct(rule);
+        //Rule has no worth as it does not describe an action to do
+        if (rule.do === undefined) {
+            return false;
+        }
         if (typeof rule.priority !== "number" || isNaN(rule.priority)) {
             if (rule.priority !== undefined || (typeof rule.priority === "number" && isNaN(rule.priority))) {
                 typeMismatchDebug(rule, "priority", "number", rule.priority);
@@ -151,7 +155,8 @@ function normalizeConditionals(rule) {
                 rule.if.statusCode,
                 rule.if.contentType,
                 rule.if.contentType,
-                rule.if.test
+                rule.if.test,
+                rule.if.requestUnfulfilled
             ].some(c => c !== undefined);
             //If it does not have any condition delete it altogether
             if (!hasAnyCondition) {
@@ -161,24 +166,24 @@ function normalizeConditionals(rule) {
     }
 }
 function normalizeAct(rule) {
-    if (rule.do !== undefined || rule.do === null) {
+    if (rule.do !== undefined) {
         //Ensure is a valid object or delete
-        if (typeof rule.do !== "object") {
+        if (typeof rule.do !== "object" || rule.do === null) {
             typeMismatchDebug(rule, "set", "object", rule.do);
             delete rule.do;
         }
-        else if (Object.keys(rule.do).length < 1) {
-            delete rule.do;
-        }
         else {
+            //Skip prop normalization
             if (rule.do.skip !== undefined) {
                 //Ensure it is a boolean
                 rule.do.skip = (rule.do.skip === true);
+            }
+            if (rule.do.set !== undefined) {
             }
         }
     }
 }
 function typeMismatchDebug(rule, property, shouldBe, is) {
-    DebugLog_1.default.error(`On rule with path '${rule._originalPath}'. Property '${property}' should be of type ${shouldBe}, instead is a ${typeof is} with value ${is}`);
+    DebugLog_1.default.error(`On rule with .path='${rule._originalPath}'. Property .${property} should be of type ${shouldBe}, instead is a ${typeof is} with value='${is}'`);
 }
 //# sourceMappingURL=RulesNormalize.js.map
