@@ -22,8 +22,8 @@ describe("Rules normalization",()=>{
  		it("should add property priority if missing, in correlation with the order defined",addsMissingPriority)
 	});
  	describe("Conditional properties",()=>{
- 		it("should remove invalid .if properties",removesInvalidIfProperties);
- 		it("should remove .if properties with invalid conditions or empty object",removesEmptyIfProperties);
+ 		it("should delete invalid .if properties",deletesInvalidIfProperties);
+ 		it("should delete .if properties with invalid conditions or empty object",deletesEmptyIfProperties);
  		describe(".statusCode property",()=>{
 			it("should remove invalid status codes",removesInvalidStatusCodes);
 		});
@@ -37,7 +37,7 @@ describe("Rules normalization",()=>{
 	});
 });
 
-function removesInvalidIfProperties(){
+function deletesInvalidIfProperties(){
 	const rules=getMockRules("if",[
 		{statusCode:400}, true , 45, ""
 	]);
@@ -51,7 +51,7 @@ function removesInvalidIfProperties(){
 	expect(normalized[3]).to.not.have.ownProperty("if");
 }
 
-function removesEmptyIfProperties(){
+function deletesEmptyIfProperties(){
 	const rules=getMockRules("if",[
 		{statusCode:[]}, {statusCode:["1",null]},
 		{statusCode:0,test:true,contentType:""},{},null

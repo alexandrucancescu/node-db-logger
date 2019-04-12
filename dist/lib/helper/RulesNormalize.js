@@ -79,108 +79,161 @@ function wrapBooleanFunction(func) {
     };
 }
 function normalizeConditionals(rule) {
-    if (rule.if !== undefined) {
-        //Ensure is a valid object or delete
-        if (typeof rule.if !== "object" || rule.if === null) {
-            typeMismatchDebug(rule, "if", "object", rule.if);
-            delete rule.if;
+    if (ensureObject(rule, "if")) {
+        //Ensure if.test is a function and if it is wrap it in a safe call
+        if (rule.if.test !== undefined) {
+            if (typeof rule.if.test !== "function") {
+                typeMismatchDebug(rule, "if.test", "function", rule.if.test);
+                delete rule.if.test;
+            }
+            else {
+                //Wrap test function to prevent error throw
+                rule.if.test = wrapBooleanFunction(rule.if.test);
+            }
         }
-        else {
-            //Ensure if.test is a function and if it is wrap it in a safe call
-            if (rule.if.test !== undefined) {
-                if (typeof rule.if.test !== "function") {
-                    typeMismatchDebug(rule, "if.test", "function", rule.if.test);
-                    delete rule.if.test;
-                }
-                else {
-                    //Wrap test function to prevent error throw
-                    rule.if.test = wrapBooleanFunction(rule.if.test);
-                }
+        //Ensures if.requestUnfulfilled is a boolean or deletes it
+        if (rule.if.requestUnfulfilled !== undefined) {
+            if (typeof rule.if.requestUnfulfilled !== "boolean") {
+                typeMismatchDebug(rule, "if.requestUnfulfilled", "boolean", rule.if.requestUnfulfilled);
+                delete rule.if.requestUnfulfilled;
             }
-            //Ensures if.requestUnfulfilled is a boolean or deletes it
-            if (rule.if.requestUnfulfilled !== undefined) {
-                if (typeof rule.if.requestUnfulfilled !== "boolean") {
-                    typeMismatchDebug(rule, "if.requestUnfulfilled", "boolean", rule.if.requestUnfulfilled);
-                    delete rule.if.requestUnfulfilled;
-                }
-            }
-            //Validates if.contentType rule/rules.
-            //Keeps only string entries that have a length>0
-            if (rule.if.contentType !== undefined) {
-                if (Array.isArray(rule.if.contentType)) {
-                    rule.if.contentType = rule.if.contentType.filter(ct => typeof ct === "string" && ct.length > 0);
-                    if (rule.if.contentType.length < 1) {
-                        //Delete if no rules left after filtering
-                        delete rule.if.contentType;
-                    }
-                }
-                else if (typeof rule.if.contentType !== "string") {
-                    typeMismatchDebug(rule, "if.contentType", "string || string[]", rule.if.contentType);
-                    delete rule.if.contentType;
-                }
-                else if (rule.if.contentType.length < 1) {
+        }
+        //Validates if.contentType rule/rules.
+        //Keeps only string entries that have a length>0
+        if (rule.if.contentType !== undefined) {
+            if (Array.isArray(rule.if.contentType)) {
+                rule.if.contentType = rule.if.contentType.filter(ct => typeof ct === "string" && ct.length > 0);
+                if (rule.if.contentType.length < 1) {
+                    //Delete if no rules left after filtering
                     delete rule.if.contentType;
                 }
             }
-            //Validates if.statusCode rule/rules
-            //Makes sure to only keep wildcard string or numbers that can represent http status codes
-            if (rule.if.statusCode !== undefined) {
-                if (Array.isArray(rule.if.statusCode)) {
-                    rule.if.statusCode = rule.if.statusCode.filter(sc => {
-                        return (typeof sc === "string" && sc.length === 3) ||
-                            (typeof sc === "number" && sc > 99 && sc < 600);
-                    });
-                    if (rule.if.statusCode.length < 1) {
-                        delete rule.if.statusCode;
-                    }
-                }
-                else if (typeof rule.if.statusCode === "string") {
-                    if (rule.if.statusCode.length !== 3) {
-                        DebugLog_1.default.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
-                        delete rule.if.statusCode;
-                    }
-                }
-                else if (typeof rule.if.statusCode === "number") {
-                    //Delete if not a valid http status code
-                    if (rule.if.statusCode < 100 || rule.if.statusCode >= 600) {
-                        DebugLog_1.default.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
-                        delete rule.if.statusCode;
-                    }
-                }
-                else {
-                    typeMismatchDebug(rule, "if.statusCode", "string || number || string[] || number[]", typeof rule.if.statusCode);
+            else if (typeof rule.if.contentType !== "string") {
+                typeMismatchDebug(rule, "if.contentType", "string || string[]", rule.if.contentType);
+                delete rule.if.contentType;
+            }
+            else if (rule.if.contentType.length < 1) {
+                delete rule.if.contentType;
+            }
+        }
+        //Validates if.statusCode rule/rules
+        //Makes sure to only keep wildcard string or numbers that can represent http status codes
+        if (rule.if.statusCode !== undefined) {
+            if (Array.isArray(rule.if.statusCode)) {
+                rule.if.statusCode = rule.if.statusCode.filter(sc => {
+                    return (typeof sc === "string" && sc.length === 3) ||
+                        (typeof sc === "number" && sc > 99 && sc < 600);
+                });
+                if (rule.if.statusCode.length < 1) {
+                    delete rule.if.statusCode;
                 }
             }
-            const hasAnyCondition = [
-                rule.if.statusCode,
-                rule.if.contentType,
-                rule.if.contentType,
-                rule.if.test,
-                rule.if.requestUnfulfilled
-            ].some(c => c !== undefined);
-            //If it does not have any condition delete it altogether
-            if (!hasAnyCondition) {
-                delete rule.if;
+            else if (typeof rule.if.statusCode === "string") {
+                if (rule.if.statusCode.length !== 3) {
+                    DebugLog_1.default.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
+                    delete rule.if.statusCode;
+                }
             }
+            else if (typeof rule.if.statusCode === "number") {
+                //Delete if not a valid http status code
+                if (rule.if.statusCode < 100 || rule.if.statusCode >= 600) {
+                    DebugLog_1.default.error(`On rule with path '${rule._originalPath}', property 'if.statusCode', invalid status code ${rule.if.statusCode}`);
+                    delete rule.if.statusCode;
+                }
+            }
+            else {
+                typeMismatchDebug(rule, "if.statusCode", "string || number || string[] || number[]", typeof rule.if.statusCode);
+            }
+        }
+        const hasAnyCondition = [
+            rule.if.statusCode,
+            rule.if.contentType,
+            rule.if.contentType,
+            rule.if.test,
+            rule.if.requestUnfulfilled
+        ].some(c => c !== undefined);
+        //If it does not have any condition delete it altogether
+        if (!hasAnyCondition) {
+            delete rule.if;
         }
     }
 }
 function normalizeAct(rule) {
-    if (rule.do !== undefined) {
-        //Ensure is a valid object or delete
-        if (typeof rule.do !== "object" || rule.do === null) {
-            typeMismatchDebug(rule, "set", "object", rule.do);
-            delete rule.do;
+    if (ensureObject(rule, "do")) {
+        //Skip prop normalization
+        if (rule.do.skip !== undefined) {
+            //Ensure it is a boolean
+            rule.do.skip = (rule.do.skip === true);
         }
-        else {
-            //Skip prop normalization
-            if (rule.do.skip !== undefined) {
-                //Ensure it is a boolean
-                rule.do.skip = (rule.do.skip === true);
+        if (ensureObject(rule, "do.set")) {
+            const set = rule.do.set;
+            if (ensureObject(rule, "do.set.request")) {
+                ensureBoolean(rule, "do.set.request.userData");
+                ensureBoolean(rule, "do.set.request.query");
+                ensureBoolean(rule, "do.set.request.body");
+                if (set.request.headers !== undefined) {
+                    if (Array.isArray(set.request.headers)) {
+                        set.request.headers = set.request.headers.filter(h => typeof h === "string" && h.length > 0);
+                        if (set.request.headers.length < 1) {
+                            delete set.request.headers;
+                        }
+                    }
+                    else if (typeof set.request.headers !== "boolean") {
+                        typeMismatchDebug(rule, "rule.do.set.request.headers", "array", set.request.headers);
+                        delete set.request.headers;
+                    }
+                }
             }
-            if (rule.do.set !== undefined) {
+            if (ensureObject(rule, "do.set.response")) {
+                ensureBoolean(rule, "do.set.response.body");
+                if (set.response.headers !== undefined) {
+                    if (Array.isArray(set.response.headers)) {
+                        set.response.headers = set.response.headers.filter(h => typeof h === "string" && h.length > 0);
+                        if (set.response.headers.length < 1) {
+                            delete set.response.headers;
+                        }
+                    }
+                    else if (typeof set.response.headers !== "boolean") {
+                        typeMismatchDebug(rule, "rule.do.set.response.headers", "array", set.response.headers);
+                        delete set.response.headers;
+                    }
+                }
             }
         }
+    }
+}
+/**
+ * @summary Checks if key of rule represents a boolean.
+ * 			If not, the property gets deleted from the rule
+ * @param rule The rule whose key is checked
+ * @param key Can represent a nested key, like 'do.set.request.headers'
+ */
+function ensureBoolean(rule, key) {
+    const val = Generic_1.getProp(rule, key);
+    if (val !== undefined && typeof val !== "boolean") {
+        typeMismatchDebug(rule, key, "boolean", val);
+        Generic_1.deleteProp(rule, key);
+    }
+}
+/**
+ * @summary Checks if key of rule represents an object that is not null.
+ * 			If not, the property gets deleted from the rule
+ * @param rule The rule whose key is checked
+ * @param key Can represent a nested key, like 'do.set.request.headers'
+ * @return true if the value of key of is an object
+ */
+function ensureObject(rule, key) {
+    const val = Generic_1.getProp(rule, key);
+    if (typeof val !== "object" || val === null) {
+        //If undefined no need to log it or delete it
+        if (val !== undefined) {
+            typeMismatchDebug(rule, key, "object", val);
+            Generic_1.deleteProp(rule, key);
+        }
+        return false;
+    }
+    else {
+        return true;
     }
 }
 function typeMismatchDebug(rule, property, shouldBe, is) {

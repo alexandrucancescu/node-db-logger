@@ -17,7 +17,88 @@ mocha_1.describe("Util functions", () => {
         mocha_1.it("should return cleaned URL", cleanURL);
         mocha_1.it("should throw error", cleanURLThrow);
     });
+    mocha_1.describe("Get nested property by name", () => {
+        mocha_1.it("should return the correct value for prop", getsCorrectProp);
+        mocha_1.it("should return undefined for nonexistent prop", getPropReturnsUndefined);
+    });
+    mocha_1.describe("Delete nested property by name", () => {
+        mocha_1.it("should delete the right property", deletesCorrectProp);
+        mocha_1.it("should return false when property does not exist", deletePropReturnsFalse);
+    });
 });
+function deletePropReturnsFalse() {
+    const obj = {
+        x: {
+            y: {
+                z: {
+                    w: 99
+                },
+                v: {
+                    w: 98,
+                }
+            }
+        }
+    };
+    chai_1.expect(Generic_1.deleteProp(obj, "x.y.wrong")).to.be.false;
+    chai_1.expect(Generic_1.deleteProp(null, "x.y.wrong")).to.not.throw;
+    chai_1.expect(Generic_1.deleteProp(null, "x.y.wrong")).to.be.false;
+    chai_1.expect(Generic_1.deleteProp(obj, null)).to.not.throw;
+    chai_1.expect(Generic_1.deleteProp(obj, null)).to.be.false;
+}
+function deletesCorrectProp() {
+    const obj = {
+        x: {
+            y: {
+                z: {
+                    w: 99
+                },
+                v: {
+                    w: 98,
+                }
+            }
+        }
+    };
+    chai_1.expect(Generic_1.deleteProp(obj, "x.y.z.w")).to.be.true;
+    chai_1.expect(obj.x.y.z).to.not.haveOwnProperty("w");
+    chai_1.expect(Generic_1.deleteProp(obj, "x.y.z")).to.be.true;
+    chai_1.expect(obj.x.y).to.not.haveOwnProperty("z");
+}
+function getPropReturnsUndefined() {
+    const obj = {
+        x: {
+            y: {
+                z: {
+                    w: 99
+                },
+                v: {
+                    w: 98,
+                }
+            }
+        }
+    };
+    chai_1.expect(Generic_1.getProp(obj, "x.y.www")).to.be.undefined;
+    chai_1.expect(Generic_1.getProp(obj, true)).to.be.undefined;
+    chai_1.expect(Generic_1.getProp(obj, "")).to.be.undefined;
+}
+function getsCorrectProp() {
+    const obj = {
+        x: {
+            y: {
+                z: {
+                    w: 99
+                },
+                v: {
+                    w: 98,
+                }
+            }
+        }
+    };
+    chai_1.expect(Generic_1.getProp(obj, "x.y.z.w")).to.equal(99);
+    chai_1.expect(Generic_1.getProp(obj, "x.y.v.w")).to.equal(98);
+    chai_1.expect(Generic_1.getProp(obj, "x.y")).to.deep.equal({
+        z: { w: 99 }, v: { w: 98, }
+    });
+}
 function cleanURLThrow() {
     chai_1.expect(Generic_1.cleanUrl.bind({}, [45, "?"])).to.throw();
     chai_1.expect(Generic_1.cleanUrl.bind({}, null)).to.throw();

@@ -20,8 +20,8 @@ mocha_1.describe("Rules normalization", () => {
         mocha_1.it("should add property priority if missing, in correlation with the order defined", addsMissingPriority);
     });
     mocha_1.describe("Conditional properties", () => {
-        mocha_1.it("should remove invalid .if properties", removesInvalidIfProperties);
-        mocha_1.it("should remove .if properties with invalid conditions or empty object", removesEmptyIfProperties);
+        mocha_1.it("should delete invalid .if properties", deletesInvalidIfProperties);
+        mocha_1.it("should delete .if properties with invalid conditions or empty object", deletesEmptyIfProperties);
         mocha_1.describe(".statusCode property", () => {
             mocha_1.it("should remove invalid status codes", removesInvalidStatusCodes);
         });
@@ -34,7 +34,7 @@ mocha_1.describe("Rules normalization", () => {
         });
     });
 });
-function removesInvalidIfProperties() {
+function deletesInvalidIfProperties() {
     const rules = getMockRules("if", [
         { statusCode: 400 }, true, 45, ""
     ]);
@@ -44,7 +44,7 @@ function removesInvalidIfProperties() {
     chai_1.expect(normalized[2]).to.not.have.ownProperty("if");
     chai_1.expect(normalized[3]).to.not.have.ownProperty("if");
 }
-function removesEmptyIfProperties() {
+function deletesEmptyIfProperties() {
     const rules = getMockRules("if", [
         { statusCode: [] }, { statusCode: ["1", null] },
         { statusCode: 0, test: true, contentType: "" }, {}, null

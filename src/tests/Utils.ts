@@ -1,6 +1,6 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
-import {mimeMatch,cleanUrl,wildcardNumberMatch} from "../lib/util/Generic";
+import {mimeMatch,cleanUrl,wildcardNumberMatch,getProp,deleteProp} from "../lib/util/Generic";
 
 describe("Util functions",()=>{
 	describe("Wildcard mime match",()=>{
@@ -16,7 +16,98 @@ describe("Util functions",()=>{
 		it("should return cleaned URL",cleanURL);
 		it("should throw error",cleanURLThrow)
 	});
+	describe("Get nested property by name",()=>{
+		it("should return the correct value for prop",getsCorrectProp);
+		it("should return undefined for nonexistent prop",getPropReturnsUndefined)
+	});
+	describe("Delete nested property by name",()=>{
+		it("should delete the right property",deletesCorrectProp);
+		it("should return false when property does not exist",deletePropReturnsFalse)
+	});
 });
+
+function deletePropReturnsFalse(){
+	const obj={
+		x:{
+			y:{
+				z:{
+					w:99
+				},
+				v:{
+					w:98,
+				}
+			}
+		}
+	};
+
+	expect(deleteProp(obj,"x.y.wrong")).to.be.false;
+	expect(deleteProp(null,"x.y.wrong")).to.not.throw;
+	expect(deleteProp(null,"x.y.wrong")).to.be.false;
+
+	expect(deleteProp(obj,null)).to.not.throw;
+	expect(deleteProp(obj,null)).to.be.false;
+}
+
+function deletesCorrectProp(){
+	const obj={
+		x:{
+			y:{
+				z:{
+					w:99
+				},
+				v:{
+					w:98,
+				}
+			}
+		}
+	};
+
+	expect(deleteProp(obj,"x.y.z.w")).to.be.true;
+	expect(obj.x.y.z).to.not.haveOwnProperty("w");
+
+	expect(deleteProp(obj,"x.y.z")).to.be.true;
+	expect(obj.x.y).to.not.haveOwnProperty("z");
+}
+
+function getPropReturnsUndefined(){
+	const obj={
+		x:{
+			y:{
+				z:{
+					w:99
+				},
+				v:{
+					w:98,
+				}
+			}
+		}
+	};
+
+	expect(getProp(obj,"x.y.www")).to.be.undefined;
+	expect(getProp(obj,true as any)).to.be.undefined;
+	expect(getProp(obj,"")).to.be.undefined;
+}
+
+function getsCorrectProp(){
+	const obj={
+		x:{
+			y:{
+				z:{
+					w:99
+				},
+				v:{
+					w:98,
+				}
+			}
+		}
+	};
+
+	expect(getProp(obj,"x.y.z.w")).to.equal(99);
+	expect(getProp(obj,"x.y.v.w")).to.equal(98);
+	expect(getProp(obj,"x.y")).to.deep.equal({
+		z:{w:99}, v:{w:98,}
+	})
+}
 
 function cleanURLThrow(){
 	expect(cleanUrl.bind({},[45,"?"])).to.throw();
