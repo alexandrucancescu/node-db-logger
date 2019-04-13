@@ -87,6 +87,7 @@ function normalizeConditionals(rule) {
                 rule.if.contentType = rule.if.contentType.filter(ct => typeof ct === "string" && ct.length > 0);
                 if (rule.if.contentType.length < 1) {
                     //Delete if no rules left after filtering
+                    arrayInvalidItemsDebug(rule, "rule.if.contentType");
                     delete rule.if.contentType;
                 }
             }
@@ -107,6 +108,7 @@ function normalizeConditionals(rule) {
                         (typeof sc === "number" && sc > 99 && sc < 600);
                 });
                 if (rule.if.statusCode.length < 1) {
+                    arrayInvalidItemsDebug(rule, "rule.if.statusCode");
                     delete rule.if.statusCode;
                 }
             }
@@ -155,6 +157,7 @@ function normalizeAct(rule) {
                     if (Array.isArray(set.request.headers)) {
                         set.request.headers = set.request.headers.filter(h => typeof h === "string" && h.length > 0);
                         if (set.request.headers.length < 1) {
+                            arrayInvalidItemsDebug(rule, "do.set.request.headers");
                             delete set.request.headers;
                         }
                     }
@@ -170,6 +173,7 @@ function normalizeAct(rule) {
                     if (Array.isArray(set.response.headers)) {
                         set.response.headers = set.response.headers.filter(h => typeof h === "string" && h.length > 0);
                         if (set.response.headers.length < 1) {
+                            arrayInvalidItemsDebug(rule, "do.set.response.headers");
                             delete set.response.headers;
                         }
                     }
@@ -178,6 +182,14 @@ function normalizeAct(rule) {
                         delete set.response.headers;
                     }
                 }
+            }
+        }
+        if (rule.do.set !== undefined) {
+            if (rule.do.skip === true) {
+                throw new RuleValidationError_1.default(rule).validationError(", for key .do, cannot set both .skip and .set properties");
+            }
+            else {
+                rule.do.skip = false;
             }
         }
         const hasAnyAction = [
@@ -240,5 +252,8 @@ function wrapBooleanFunction(func) {
 }
 function typeMismatchDebug(rule, property, shouldBe, is) {
     DebugLog_1.default.error(`On rule with .path='${rule._originalPath}'. Property .${property} should be of type ${shouldBe}, instead is a ${typeof is} with value='${is}'`);
+}
+function arrayInvalidItemsDebug(rule, property) {
+    DebugLog_1.default.error(`On rule with .path='${rule._originalPath}'. Property .${property} has no valid items`);
 }
 //# sourceMappingURL=RulesNormalize.js.map

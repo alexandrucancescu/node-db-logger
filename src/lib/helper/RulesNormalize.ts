@@ -101,6 +101,7 @@ function normalizeConditionals(rule:RouteRule){
 
 				if(rule.if.contentType.length<1){
 					//Delete if no rules left after filtering
+					arrayInvalidItemsDebug(rule,"rule.if.contentType");
 					delete rule.if.contentType;
 				}
 			}else if(typeof rule.if.contentType!=="string"){
@@ -120,6 +121,7 @@ function normalizeConditionals(rule:RouteRule){
 						(typeof sc==="number" && sc>99 && sc<600);
 				});
 				if(rule.if.statusCode.length<1){
+					arrayInvalidItemsDebug(rule,"rule.if.statusCode");
 					delete rule.if.statusCode;
 				}
 			}else if(typeof rule.if.statusCode==="string"){
@@ -176,6 +178,7 @@ function normalizeAct(rule:RouteRule){
 							typeof h==="string" && h.length>0
 						);
 						if(set.request.headers.length<1){
+							arrayInvalidItemsDebug(rule,"do.set.request.headers");
 							delete set.request.headers;
 						}
 					}else if(typeof set.request.headers!=="boolean"){
@@ -195,6 +198,7 @@ function normalizeAct(rule:RouteRule){
 							typeof h==="string" && h.length>0
 						);
 						if(set.response.headers.length<1){
+							arrayInvalidItemsDebug(rule,"do.set.response.headers");
 							delete set.response.headers;
 						}
 					}else if(typeof set.response.headers!=="boolean"){
@@ -202,6 +206,14 @@ function normalizeAct(rule:RouteRule){
 						delete set.response.headers;
 					}
 				}
+			}
+		}
+
+		if(rule.do.set!==undefined){
+			if(rule.do.skip===true){
+				throw new RuleValidationError(rule).validationError(", for key .do, cannot set both .skip and .set properties");
+			}else{
+				rule.do.skip=false;
 			}
 		}
 
@@ -267,4 +279,8 @@ function wrapBooleanFunction(func:(...any)=>boolean):()=>boolean{
 
 function typeMismatchDebug(rule:RouteRule,property:string,shouldBe:string,is:any){
 	debug.error(`On rule with .path='${rule._originalPath}'. Property .${property} should be of type ${shouldBe}, instead is a ${typeof is} with value='${is}'`);
+}
+
+function arrayInvalidItemsDebug(rule:RouteRule,property:string){
+	debug.error(`On rule with .path='${rule._originalPath}'. Property .${property} has no valid items`);
 }

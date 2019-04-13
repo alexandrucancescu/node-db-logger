@@ -42,4 +42,9 @@ export default class RuleValidationError extends Error{
 		return this;
 	}
 
+	public validationError(error:string):this{
+		super.message=`At rule ${this.ruleIdentifier}, ${error}`;
+		return this;
+	}
+
 }

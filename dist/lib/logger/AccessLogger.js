@@ -17,7 +17,7 @@ class AccessLogger {
     }
     requestFinished(req, res, start_ms) {
         const response_time_ms = Generic_1.getProcessTimeMs() - start_ms;
-        const matchedPaths = this.rulesOverseer.computeRouteAct(req, res);
+        const act = this.rulesOverseer.computeRouteAct(req, res);
     }
 }
 exports.default = AccessLogger;

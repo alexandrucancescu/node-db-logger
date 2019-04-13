@@ -9,8 +9,7 @@ class RulesOverseer {
     }
     computeRouteAct(req, res) {
         const path = Generic_1.cleanUrl(req.originalUrl || req.url);
-        console.log("URL: ", path, "| code:", res.statusCode, "| mime:", res.get("content-type"));
-        const matchedRules = this.getRulesMatched(path, res).sort(priorityCompare);
+        const matchedRules = this.getRulesMatched(path, req, res).sort(priorityCompare);
         const acts = matchedRules.map(rule => rule.do);
         let mergedAct = null;
         if (acts.length === 1) {
@@ -21,13 +20,13 @@ class RulesOverseer {
         }
         return mergedAct;
     }
-    getRulesMatched(path, res) {
+    getRulesMatched(path, req, res) {
         return this.rules.filter(rule => {
             if (!pathMatches(path, rule)) {
                 return false;
             }
             if (rule.if) {
-                return conditionsSatisfied(res, rule);
+                return conditionsSatisfied(req, res, rule);
             }
             else {
                 //If there are no conditions to be satisfied return true
@@ -41,7 +40,7 @@ exports.default = RulesOverseer;
  * Multiple conditions in a .if property are treated as 'or', so true is returned
  * when any of them are satisfied
  */
-function conditionsSatisfied(res, rule) {
+function conditionsSatisfied(req, res, rule) {
     const conditions = rule.if;
     if (res.headersSent) {
         if (conditions.statusCode) {
@@ -56,7 +55,7 @@ function conditionsSatisfied(res, rule) {
         return true;
     }
     if (conditions.test) {
-        return conditions.test() === true;
+        return conditions.test(req, res) === true;
     }
     return false;
 }

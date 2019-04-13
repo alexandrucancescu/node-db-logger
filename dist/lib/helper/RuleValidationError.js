@@ -28,6 +28,10 @@ class RuleValidationError extends Error {
         super.message = `At rule ${this.ruleIdentifier}, key ${this.key} has in invalid value=${value}`;
         return this;
     }
+    validationError(error) {
+        super.message = `At rule ${this.ruleIdentifier}, ${error}`;
+        return this;
+    }
 }
 exports.default = RuleValidationError;
 //# sourceMappingURL=RuleValidationError.js.map

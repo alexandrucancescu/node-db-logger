@@ -5,6 +5,7 @@ import normalize from "../lib/helper/RulesNormalize"
 import RuleValidationError from "../lib/helper/RuleValidationError"
 import Logger from "../lib/Logger";
 import RouteRule from "../lib/domain/access-log/RouteRule";
+import {Error} from "mongoose";
 
 Logger.configuration.debug=false;
 
@@ -35,6 +36,8 @@ describe("Rules normalization",()=>{
 	});
  	describe(".do act property",()=>{
  		it("should throw error for rules with invalid .do properties",throwsForInvalidDoProps);
+ 		it("should set .skip property to false when .set property is defined",autoSetsSkipPropertyToFalse);
+ 		it("should throw error when skip is true and .set property is defined",throwsWhenBothSkipAndSet);
 		describe(".skip property",()=>{
 			it("should throw if .skip is not a boolean",throwsWhenSkipNotBoolean)
 		});
@@ -60,6 +63,35 @@ describe("Rules normalization",()=>{
 		});
 	})
 });
+
+function throwsWhenBothSkipAndSet(){
+	const rules_1=[
+		{path:"/",do:{skip:true,set:{request:{userData:true}}}},
+	] as RouteRule[];
+
+	expect(normalize.bind(null,rules_1)).to.throw(RuleValidationError);
+
+	const rules_2=[
+		{path:"/",do:{skip:true,set:{request:null}}},
+	] as RouteRule[];
+
+	expect(normalize.bind(null,rules_2)).to.throw(RuleValidationError);
+}
+
+function autoSetsSkipPropertyToFalse(){
+	const rules=[
+		{path:"/",do:{set:{request:{userData:true}}}},
+		{path:"/",do:{set:{request:null}}},
+	] as RouteRule[];
+
+	const normalized=normalize(rules);
+
+	expect(normalized[0].do).to.haveOwnProperty("skip");
+	expect(normalized[0].do.skip).to.equal(false);
+
+	expect(normalized[1].do).to.haveOwnProperty("skip");
+	expect(normalized[1].do.skip).to.equal(false);
+}
 
 function onlyAllowsBooleanForResponseProperties(){
 	const rules=getMockDoRules("set",[
@@ -179,15 +211,15 @@ function deletesEmptyIfProperties(){
 function wrapsTestFunctions(){
 	const rules=getMockIfRules("test",[
 		()=>"Rebel",
-		()=>{throw new Error()}
+		()=>{throw new Error("")}
 	]);
 	const normalized=normalize(rules);
 
 	expect(normalized[0].if.test).to.not.throw;
-	expect(normalized[0].if.test()).to.equal(false);
+	expect(normalized[0].if.test(null,null)).to.equal(false);
 
 	expect(normalized[1].if.test).to.not.throw;
-	expect(normalized[1].if.test()).to.equal(false);
+	expect(normalized[1].if.test(null,null)).to.equal(false);
 }
 
 function removesInvalidTestFunctions(){

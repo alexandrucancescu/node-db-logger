@@ -5,6 +5,7 @@ const chai_1 = require("chai");
 const RulesNormalize_1 = require("../lib/helper/RulesNormalize");
 const RuleValidationError_1 = require("../lib/helper/RuleValidationError");
 const Logger_1 = require("../lib/Logger");
+const mongoose_1 = require("mongoose");
 Logger_1.default.configuration.debug = false;
 mocha_1.describe("Rules normalization", () => {
     mocha_1.it("should throw for invalid rules", throwsForInvalidRules);
@@ -33,6 +34,8 @@ mocha_1.describe("Rules normalization", () => {
     });
     mocha_1.describe(".do act property", () => {
         mocha_1.it("should throw error for rules with invalid .do properties", throwsForInvalidDoProps);
+        mocha_1.it("should set .skip property to false when .set property is defined", autoSetsSkipPropertyToFalse);
+        mocha_1.it("should throw error when skip is true and .set property is defined", throwsWhenBothSkipAndSet);
         mocha_1.describe(".skip property", () => {
             mocha_1.it("should throw if .skip is not a boolean", throwsWhenSkipNotBoolean);
         });
@@ -58,6 +61,27 @@ mocha_1.describe("Rules normalization", () => {
         });
     });
 });
+function throwsWhenBothSkipAndSet() {
+    const rules_1 = [
+        { path: "/", do: { skip: true, set: { request: { userData: true } } } },
+    ];
+    chai_1.expect(RulesNormalize_1.default.bind(null, rules_1)).to.throw(RuleValidationError_1.default);
+    const rules_2 = [
+        { path: "/", do: { skip: true, set: { request: null } } },
+    ];
+    chai_1.expect(RulesNormalize_1.default.bind(null, rules_2)).to.throw(RuleValidationError_1.default);
+}
+function autoSetsSkipPropertyToFalse() {
+    const rules = [
+        { path: "/", do: { set: { request: { userData: true } } } },
+        { path: "/", do: { set: { request: null } } },
+    ];
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].do).to.haveOwnProperty("skip");
+    chai_1.expect(normalized[0].do.skip).to.equal(false);
+    chai_1.expect(normalized[1].do).to.haveOwnProperty("skip");
+    chai_1.expect(normalized[1].do.skip).to.equal(false);
+}
 function onlyAllowsBooleanForResponseProperties() {
     const rules = getMockDoRules("set", [
         {
@@ -154,13 +178,13 @@ function deletesEmptyIfProperties() {
 function wrapsTestFunctions() {
     const rules = getMockIfRules("test", [
         () => "Rebel",
-        () => { throw new Error(); }
+        () => { throw new mongoose_1.Error(""); }
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if.test).to.not.throw;
-    chai_1.expect(normalized[0].if.test()).to.equal(false);
+    chai_1.expect(normalized[0].if.test(null, null)).to.equal(false);
     chai_1.expect(normalized[1].if.test).to.not.throw;
-    chai_1.expect(normalized[1].if.test()).to.equal(false);
+    chai_1.expect(normalized[1].if.test(null, null)).to.equal(false);
 }
 function removesInvalidTestFunctions() {
     const rules = getMockIfRules("test", [

@@ -10,5 +10,6 @@ export default class RuleValidationError extends Error {
     shouldBe(type: string): this;
     invalidRule(): this;
     invalidKey(): this;
+    validationError(error: string): this;
 }
 export {};

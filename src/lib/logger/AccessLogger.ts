@@ -1,9 +1,7 @@
-import AccessLog, {IAccessLog} from "../model/AccessLog";
 import {RequestHandler,Request,Response,NextFunction} from "express"
 import * as onRequestFinished from "on-finished";
 import {getProcessTimeMs} from "../util/Generic";
 import AccessLogTransport from "../transports/access_log/AccessLogTransport"
-import {OutgoingHttpHeaders, ServerResponse} from "http";
 import RulesOverseer from "../helper/RulesOverseer";
 import RouteRule from "../domain/access-log/RouteRule";
 
@@ -27,6 +25,6 @@ export default class AccessLogger{
 
 	private requestFinished(req:Request,res:Response,start_ms:number){
 		const response_time_ms=getProcessTimeMs()-start_ms;
-		const matchedPaths=this.rulesOverseer.computeRouteAct(req,res);
+		const act=this.rulesOverseer.computeRouteAct(req,res);
 	}
 }

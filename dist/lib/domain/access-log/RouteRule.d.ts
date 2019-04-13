@@ -1,11 +1,16 @@
+/// <reference types="node" />
+/// <reference types="express-serve-static-core" />
+import { IncomingMessage, ServerResponse } from "http";
 export declare type Path = RegExp | string;
 export declare type StatusCodeRule = number | string | Array<number | string>;
 export declare type ContentTypeRule = string | string[];
+declare type Request = IncomingMessage | Express.Request;
+declare type Response = ServerResponse | Express.Response;
 export interface ConditionalRule {
     statusCode?: StatusCodeRule;
     contentType?: ContentTypeRule;
     requestUnfulfilled?: boolean;
-    test?: () => boolean;
+    test?: (req: Request, res: Response) => boolean;
 }
 export interface SetRule {
     request?: {
@@ -29,3 +34,4 @@ export default interface RouteRule {
     priority?: number;
     do: Act;
 }
+export {};
