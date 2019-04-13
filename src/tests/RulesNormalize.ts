@@ -1,7 +1,8 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
 
-import normalize, {RuleValidationError} from "../lib/helper/RulesNormalize"
+import normalize from "../lib/helper/RulesNormalize"
+import RuleValidationError from "../lib/helper/RuleValidationError"
 import Logger from "../lib/Logger";
 import RouteRule from "../lib/domain/access-log/RouteRule";
 

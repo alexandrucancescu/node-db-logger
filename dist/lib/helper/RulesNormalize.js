@@ -4,35 +4,7 @@ const DebugLog_1 = require("../util/DebugLog");
 const Generic_1 = require("../util/Generic");
 const isGlob = require("is-glob");
 const micromatch_1 = require("micromatch");
-class RuleValidationError extends Error {
-    constructor(rule, key) {
-        super(null);
-        if (rule !== undefined && rule !== null) {
-            this.ruleIdentifier = `with path='${rule._originalPath || rule.path}'`;
-        }
-        else {
-            this.ruleIdentifier = String(rule);
-        }
-        super.message = `Validation error for rule ${this.ruleIdentifier} , for key ${this.key}`;
-        this.rule = rule;
-        this.key = key;
-    }
-    shouldBe(type) {
-        const butIs = Generic_1.getProp(this.rule, this.key);
-        super.message = `At rule ${this.ruleIdentifier}, key ${this.key} should be a ${type}, but is a ${typeof butIs} with value '${butIs}'`;
-        return this;
-    }
-    invalidRule() {
-        super.message = `Invalid rule ${this.ruleIdentifier}. RouteRule should be a object !== null`;
-        return this;
-    }
-    invalidKey() {
-        const value = Generic_1.getProp(this.rule, this.key);
-        super.message = `At rule ${this.ruleIdentifier}, key ${this.key} has in invalid value=${value}`;
-        return this;
-    }
-}
-exports.RuleValidationError = RuleValidationError;
+const RuleValidationError_1 = require("./RuleValidationError");
 /**
  * Removes rules with invalid paths
  * Cleans urls
@@ -50,7 +22,7 @@ function normalizeRules(rules) {
     let currentRulePriority = 0;
     return rules.filter(rule => {
         if (typeof rule !== "object" || rule === null) {
-            throw new RuleValidationError(rule).invalidRule();
+            throw new RuleValidationError_1.default(rule).invalidRule();
         }
         normalizePath(rule);
         normalizeConditionals(rule);
@@ -75,7 +47,7 @@ function normalizePath(rule) {
     rule._originalPath = rule.path;
     if (typeof rule.path === "string") {
         if (rule.path.length < 1) {
-            throw new RuleValidationError(rule, "path").invalidKey();
+            throw new RuleValidationError_1.default(rule, "path").invalidKey();
         }
         if (isGlob(rule.path)) {
             rule.path = micromatch_1.makeRe(rule.path);
@@ -85,7 +57,7 @@ function normalizePath(rule) {
         }
     }
     else if (!(rule.path instanceof RegExp)) {
-        throw new RuleValidationError(rule, "path").shouldBe("string/RegExp");
+        throw new RuleValidationError_1.default(rule, "path").shouldBe("string/RegExp");
     }
 }
 function normalizeConditionals(rule) {
@@ -171,7 +143,7 @@ function normalizeConditionals(rule) {
 function normalizeAct(rule) {
     if (typeof rule.do === "object" && rule.do !== null) {
         if (rule.do.skip !== undefined && typeof rule.do.skip !== "boolean") {
-            throw new RuleValidationError(rule, "do.skip").shouldBe("boolean");
+            throw new RuleValidationError_1.default(rule, "do.skip").shouldBe("boolean");
         }
         if (ensureObject(rule, "do.set")) {
             const set = rule.do.set;
@@ -217,7 +189,7 @@ function normalizeAct(rule) {
         }
     }
     else {
-        throw new RuleValidationError(rule, "do").shouldBe("object");
+        throw new RuleValidationError_1.default(rule, "do").shouldBe("object");
     }
 }
 /**

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mocha_1 = require("mocha");
 const chai_1 = require("chai");
 const RulesNormalize_1 = require("../lib/helper/RulesNormalize");
+const RuleValidationError_1 = require("../lib/helper/RuleValidationError");
 const Logger_1 = require("../lib/Logger");
 Logger_1.default.configuration.debug = false;
 mocha_1.describe("Rules normalization", () => {
@@ -187,7 +188,7 @@ function throwsWhenSkipNotBoolean() {
         null, "false", 1, 0
     ]);
     for (let rule of rules) {
-        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError)
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RuleValidationError_1.default)
             .that.has.property("key").that.equals("do.skip");
     }
 }
@@ -196,14 +197,14 @@ function throwsForInvalidPaths() {
         45, null, "", {}
     ]);
     for (let rule of rules) {
-        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError)
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RuleValidationError_1.default)
             .that.has.property("key").that.equals("path");
     }
 }
 function throwsForInvalidRules() {
     const rules = [null, 4450, "/users", false];
     for (let rule of rules) {
-        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError);
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RuleValidationError_1.default);
     }
 }
 function getMockIfRules(withIfKey, values) {
