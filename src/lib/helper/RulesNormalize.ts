@@ -8,6 +8,45 @@ type RouteRule=PublicRouteRule&{
 	_originalPath?:Path
 }
 
+export class RuleValidationError extends Error{
+	private readonly rule:RouteRule;
+	private readonly key:string;
+	private readonly ruleIdentifier:string;
+
+	constructor(rule:RouteRule,key?:string){
+		super(null);
+
+		if(rule!==undefined && rule!==null){
+			this.ruleIdentifier=`with path='${rule._originalPath||rule.path}'`;
+		}else{
+			this.ruleIdentifier=String(rule);
+		}
+
+		super.message=`Validation error for rule ${this.ruleIdentifier} , for key ${this.key}`;
+
+		this.rule=rule;
+		this.key=key;
+	}
+
+	public shouldBe(type:string):this{
+		const butIs=getProp(this.rule,this.key);
+		super.message=`At rule ${this.ruleIdentifier}, key ${this.key} should be a ${type}, but is a ${typeof butIs} with value '${butIs}'`;
+		return this;
+	}
+
+	public invalidRule():this{
+		super.message=`Invalid rule ${this.ruleIdentifier}. RouteRule should be a object !== null`;
+		return this;
+	}
+
+	public invalidKey():this{
+		const value=getProp(this.rule,this.key);
+		super.message=`At rule ${this.ruleIdentifier}, key ${this.key} has in invalid value=${value}`;
+		return this;
+	}
+
+}
+
 /**
  * Removes rules with invalid paths
  * Cleans urls
@@ -27,24 +66,10 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 
 	return rules.filter(rule=>{
 		if(typeof rule!=="object" || rule===null){
-			return false;
+			throw new RuleValidationError(rule).invalidRule();
 		}
 
-		if(!isPathValid(rule.path)){
-			return false;
-		}
-
-		//Save the original path for debugging purposes
-		rule._originalPath=rule.path;
-
-		if(typeof rule.path==="string"){
-			if(isGlob(rule.path)){
-				rule.path=globToRegex(rule.path);
-			}else{
-				rule.path=cleanUrl(rule.path);
-			}
-		}
-
+		normalizePath(rule);
 		normalizeConditionals(rule);
 		normalizeAct(rule);
 
@@ -65,28 +90,22 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 	});
 }
 
-function isPathValid(path:Path):boolean{
-	if(typeof path==="string") {
-		if (path.length < 1) {
-			debug.error(`Path ${path} is invalid`);
-			return false;
-		}
-	}else if(!(path instanceof RegExp)){
-		debug.error(`Path ${path} should be either string or RegExp`);
-		return false;
-	}
-	return true;
-}
+function normalizePath(rule:RouteRule){
+	//Save the original path for debugging purposes
+	rule._originalPath=rule.path;
 
-//Wrap function to prevent error throw and to ensure the type returned is boolean
-function wrapBooleanFunction(func:(...any)=>boolean):()=>boolean{
-	return function(...any:any[]):boolean{
-		try{
-			return func(...any)===true;
-		}catch (e) {
-			debug.error("RouterRule if.test function threw error:",e);
-			return false;
+	if(typeof rule.path==="string") {
+		if (rule.path.length < 1) {
+			throw new RuleValidationError(rule,"path").invalidKey();
 		}
+
+		if(isGlob(rule.path)){
+			rule.path=globToRegex(rule.path);
+		}else{
+			rule.path=cleanUrl(rule.path);
+		}
+	}else if(!(rule.path instanceof RegExp)){
+		throw new RuleValidationError(rule,"path").shouldBe("string/RegExp")
 	}
 }
 
@@ -173,12 +192,10 @@ function normalizeConditionals(rule:RouteRule){
 }
 
 function normalizeAct(rule:RouteRule){
-	if(ensureObject(rule,"do")){
+	if(typeof rule.do==="object" && rule.do!==null){
 
-		//Skip prop normalization
-		if(rule.do.skip!==undefined){
-			//Ensure it is a boolean
-			rule.do.skip=(rule.do.skip===true);
+		if(rule.do.skip!==undefined && typeof rule.do.skip!=="boolean"){
+			throw new RuleValidationError(rule,"do.skip").shouldBe("boolean");
 		}
 
 		if(ensureObject(rule,"do.set")){
@@ -225,6 +242,17 @@ function normalizeAct(rule:RouteRule){
 				}
 			}
 		}
+
+		const hasAnyAction=[
+			rule.do.skip,
+			rule.do.set
+		].some(a=>a!==undefined);
+
+		if(!hasAnyAction){
+			delete rule.do;
+		}
+	}else{
+		throw new RuleValidationError(rule,"do").shouldBe("object");
 	}
 }
 /**
@@ -260,6 +288,18 @@ function ensureObject(rule:RouteRule,key:string):boolean{
 		return false;
 	}else{
 		return true;
+	}
+}
+
+//Wrap function to prevent error throw and to ensure the type returned is boolean
+function wrapBooleanFunction(func:(...any)=>boolean):()=>boolean{
+	return function(...any:any[]):boolean{
+		try{
+			return func(...any)===true;
+		}catch (e) {
+			debug.error("RouterRule if.test function threw error:",e);
+			return false;
+		}
 	}
 }
 

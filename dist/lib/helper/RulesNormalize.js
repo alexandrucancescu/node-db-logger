@@ -4,6 +4,35 @@ const DebugLog_1 = require("../util/DebugLog");
 const Generic_1 = require("../util/Generic");
 const isGlob = require("is-glob");
 const micromatch_1 = require("micromatch");
+class RuleValidationError extends Error {
+    constructor(rule, key) {
+        super(null);
+        if (rule !== undefined && rule !== null) {
+            this.ruleIdentifier = `with path='${rule._originalPath || rule.path}'`;
+        }
+        else {
+            this.ruleIdentifier = String(rule);
+        }
+        super.message = `Validation error for rule ${this.ruleIdentifier} , for key ${this.key}`;
+        this.rule = rule;
+        this.key = key;
+    }
+    shouldBe(type) {
+        const butIs = Generic_1.getProp(this.rule, this.key);
+        super.message = `At rule ${this.ruleIdentifier}, key ${this.key} should be a ${type}, but is a ${typeof butIs} with value '${butIs}'`;
+        return this;
+    }
+    invalidRule() {
+        super.message = `Invalid rule ${this.ruleIdentifier}. RouteRule should be a object !== null`;
+        return this;
+    }
+    invalidKey() {
+        const value = Generic_1.getProp(this.rule, this.key);
+        super.message = `At rule ${this.ruleIdentifier}, key ${this.key} has in invalid value=${value}`;
+        return this;
+    }
+}
+exports.RuleValidationError = RuleValidationError;
 /**
  * Removes rules with invalid paths
  * Cleans urls
@@ -21,21 +50,9 @@ function normalizeRules(rules) {
     let currentRulePriority = 0;
     return rules.filter(rule => {
         if (typeof rule !== "object" || rule === null) {
-            return false;
+            throw new RuleValidationError(rule).invalidRule();
         }
-        if (!isPathValid(rule.path)) {
-            return false;
-        }
-        //Save the original path for debugging purposes
-        rule._originalPath = rule.path;
-        if (typeof rule.path === "string") {
-            if (isGlob(rule.path)) {
-                rule.path = micromatch_1.makeRe(rule.path);
-            }
-            else {
-                rule.path = Generic_1.cleanUrl(rule.path);
-            }
-        }
+        normalizePath(rule);
         normalizeConditionals(rule);
         normalizeAct(rule);
         //Rule has no worth as it does not describe an action to do
@@ -53,30 +70,23 @@ function normalizeRules(rules) {
     });
 }
 exports.default = normalizeRules;
-function isPathValid(path) {
-    if (typeof path === "string") {
-        if (path.length < 1) {
-            DebugLog_1.default.error(`Path ${path} is invalid`);
-            return false;
+function normalizePath(rule) {
+    //Save the original path for debugging purposes
+    rule._originalPath = rule.path;
+    if (typeof rule.path === "string") {
+        if (rule.path.length < 1) {
+            throw new RuleValidationError(rule, "path").invalidKey();
+        }
+        if (isGlob(rule.path)) {
+            rule.path = micromatch_1.makeRe(rule.path);
+        }
+        else {
+            rule.path = Generic_1.cleanUrl(rule.path);
         }
     }
-    else if (!(path instanceof RegExp)) {
-        DebugLog_1.default.error(`Path ${path} should be either string or RegExp`);
-        return false;
+    else if (!(rule.path instanceof RegExp)) {
+        throw new RuleValidationError(rule, "path").shouldBe("string/RegExp");
     }
-    return true;
-}
-//Wrap function to prevent error throw and to ensure the type returned is boolean
-function wrapBooleanFunction(func) {
-    return function (...any) {
-        try {
-            return func(...any) === true;
-        }
-        catch (e) {
-            DebugLog_1.default.error("RouterRule if.test function threw error:", e);
-            return false;
-        }
-    };
 }
 function normalizeConditionals(rule) {
     if (ensureObject(rule, "if")) {
@@ -159,11 +169,9 @@ function normalizeConditionals(rule) {
     }
 }
 function normalizeAct(rule) {
-    if (ensureObject(rule, "do")) {
-        //Skip prop normalization
-        if (rule.do.skip !== undefined) {
-            //Ensure it is a boolean
-            rule.do.skip = (rule.do.skip === true);
+    if (typeof rule.do === "object" && rule.do !== null) {
+        if (rule.do.skip !== undefined && typeof rule.do.skip !== "boolean") {
+            throw new RuleValidationError(rule, "do.skip").shouldBe("boolean");
         }
         if (ensureObject(rule, "do.set")) {
             const set = rule.do.set;
@@ -200,6 +208,16 @@ function normalizeAct(rule) {
                 }
             }
         }
+        const hasAnyAction = [
+            rule.do.skip,
+            rule.do.set
+        ].some(a => a !== undefined);
+        if (!hasAnyAction) {
+            delete rule.do;
+        }
+    }
+    else {
+        throw new RuleValidationError(rule, "do").shouldBe("object");
     }
 }
 /**
@@ -235,6 +253,18 @@ function ensureObject(rule, key) {
     else {
         return true;
     }
+}
+//Wrap function to prevent error throw and to ensure the type returned is boolean
+function wrapBooleanFunction(func) {
+    return function (...any) {
+        try {
+            return func(...any) === true;
+        }
+        catch (e) {
+            DebugLog_1.default.error("RouterRule if.test function threw error:", e);
+            return false;
+        }
+    };
 }
 function typeMismatchDebug(rule, property, shouldBe, is) {
     DebugLog_1.default.error(`On rule with .path='${rule._originalPath}'. Property .${property} should be of type ${shouldBe}, instead is a ${typeof is} with value='${is}'`);

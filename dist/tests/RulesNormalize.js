@@ -6,20 +6,17 @@ const RulesNormalize_1 = require("../lib/helper/RulesNormalize");
 const Logger_1 = require("../lib/Logger");
 Logger_1.default.configuration.debug = false;
 mocha_1.describe("Rules normalization", () => {
-    mocha_1.it("should remove rules that are null or not objects", removesInvalidRules);
+    mocha_1.it("should throw for invalid rules", throwsForInvalidRules);
     mocha_1.describe("Paths", () => {
-        mocha_1.it("should remove only rules with invalid paths", removesInvalidPaths);
+        mocha_1.it("should throw for rules with invalid paths", throwsForInvalidPaths);
         mocha_1.it("should clean paths URLs", cleansPathsUrls);
         mocha_1.it("should convert glob pattern paths to regex", convertsGlobPathsToRegex);
         mocha_1.it("should correctly resolve glob paths", correctlyResolvesGlobPaths);
     });
-    mocha_1.describe("Skip property", () => {
-        mocha_1.it("should handle property skip not boolean", handlesSkipNotBoolean);
-    });
     mocha_1.describe("Priority property", () => {
         mocha_1.it("should add property priority if missing, in correlation with the order defined", addsMissingPriority);
     });
-    mocha_1.describe("Conditional properties", () => {
+    mocha_1.describe(".if conditional properties", () => {
         mocha_1.it("should delete invalid .if properties", deletesInvalidIfProperties);
         mocha_1.it("should delete .if properties with invalid conditions or empty object", deletesEmptyIfProperties);
         mocha_1.describe(".statusCode property", () => {
@@ -33,7 +30,19 @@ mocha_1.describe("Rules normalization", () => {
             mocha_1.it("should wrap .test function into a safe call that only returns boolean", wrapsTestFunctions);
         });
     });
+    mocha_1.describe(".do act property", () => {
+        mocha_1.it("should throw error for rules with invalid .do properties", throwsForInvalidDoProps);
+        mocha_1.describe("Skip property", () => {
+            mocha_1.it("should throw if .skip is not a boolean", throwsWhenSkipNotBoolean);
+        });
+    });
 });
+function throwsForInvalidDoProps() {
+    const rules = getMockRules("do", [
+        { skip: true }, false, {}, null
+    ]);
+    chai_1.expect(RulesNormalize_1.default.bind(null, rules)).to.throw;
+}
 function deletesInvalidIfProperties() {
     const rules = getMockRules("if", [
         { statusCode: 400 }, true, 45, ""
@@ -55,17 +64,9 @@ function deletesEmptyIfProperties() {
     });
 }
 function wrapsTestFunctions() {
-    const rules = getMockRules("if", [
-        {
-            test() {
-                return "Rebel";
-            }
-        },
-        {
-            test() {
-                throw new Error();
-            }
-        }
+    const rules = getMockIfRules("test", [
+        () => "Rebel",
+        () => { throw new Error(); }
     ]);
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].if.test).to.not.throw;
@@ -151,10 +152,9 @@ function cleansPathsUrls() {
 }
 function convertsGlobPathsToRegex() {
     const rules = [
-        { path: "/users/index", do: {} },
-        { path: "/users/**", do: {} },
-        { path: "", do: {} },
-        { path: "/**/index.html", do: {} } //Is converted to regex
+        { path: "/users/index", do: { skip: false } },
+        { path: "/users/**", do: { skip: false } },
+        { path: "/**/index.html", do: { skip: false } } //Is converted to regex
     ];
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized).to.have.length(3);
@@ -164,8 +164,8 @@ function convertsGlobPathsToRegex() {
 }
 function correctlyResolvesGlobPaths() {
     const rules = [
-        { path: "/users/**", do: {} },
-        { path: "/**/index.html", do: {} } //Is converted to regex
+        { path: "/users/**", do: { skip: false } },
+        { path: "/**/index.html", do: { skip: false } } //Is converted to regex
     ];
     const normalized = RulesNormalize_1.default(rules);
     chai_1.expect(normalized[0].path).to.be.instanceOf(RegExp);
@@ -182,34 +182,29 @@ function correctlyResolvesGlobPaths() {
     chai_1.expect(second.test("/l1/l2/l3/l4/index.html")).to.be.true;
     chai_1.expect(second.test("/l1/index.html")).to.be.true;
 }
-function handlesSkipNotBoolean() {
-    // @ts-ignore
-    const rules = getMockDoRules("skip", ["false", "true", null, true]);
-    const normalized = RulesNormalize_1.default(rules);
-    chai_1.expect(normalized).to.have.length(4);
-    chai_1.expect(normalized[0].do.skip).to.be.false;
-    chai_1.expect(normalized[1].do.skip).to.be.false;
-    chai_1.expect(normalized[2].do.skip).to.be.false;
-    chai_1.expect(normalized[3].do.skip).to.be.true;
-}
-function removesInvalidPaths() {
-    const rules = getMockRules("path", [
-        45, true, null, undefined, "/users", /\/.*/,
+function throwsWhenSkipNotBoolean() {
+    const rules = getMockDoRules("skip", [
+        null, "false", 1, 0
     ]);
-    const normalized = RulesNormalize_1.default(rules);
-    chai_1.expect(normalized).to.have.length(2);
-    chai_1.expect(normalized[0]).to.haveOwnProperty("path");
-    chai_1.expect(normalized[1]).to.haveOwnProperty("path");
-    chai_1.expect(normalized[0].path).to.be.a("string");
-    chai_1.expect(normalized[1].path).to.be.instanceOf(RegExp);
+    for (let rule of rules) {
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError)
+            .that.has.property("key").that.equals("do.skip");
+    }
 }
-function removesInvalidRules() {
-    const rules = [
-        null, 4450, true, "rule", { path: "/", do: {} }
-    ];
-    const normalized = RulesNormalize_1.default(rules);
-    chai_1.expect(normalized).to.have.length(1);
-    chai_1.expect(normalized[0]).to.be.a.instanceOf(Object);
+function throwsForInvalidPaths() {
+    const rules = getMockRules("path", [
+        45, null, "", {}
+    ]);
+    for (let rule of rules) {
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError)
+            .that.has.property("key").that.equals("path");
+    }
+}
+function throwsForInvalidRules() {
+    const rules = [null, 4450, "/users", false];
+    for (let rule of rules) {
+        chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RulesNormalize_1.RuleValidationError);
+    }
 }
 function getMockIfRules(withIfKey, values) {
     return values.map(v => {
@@ -225,16 +220,26 @@ function getMockIfRules(withIfKey, values) {
         return mock;
     });
 }
-function getMockDoRules(doKey, values) {
+function getMockDoRules(withIfKey, values) {
     return values.map(v => {
-        let rule = { path: "/", do: {} };
-        rule.do[doKey] = v;
-        return rule;
+        let mock = {
+            path: "/",
+            do: {
+                skip: false,
+            }
+        };
+        mock.do[withIfKey] = v;
+        return mock;
     });
 }
 function getMockRules(withKey, values) {
     return values.map(v => {
-        let rule = { path: "/", do: {} };
+        let rule = {
+            path: "/",
+            do: {
+                skip: false,
+            }
+        };
         rule[withKey] = v;
         return rule;
     });

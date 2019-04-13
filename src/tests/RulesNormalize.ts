@@ -1,27 +1,24 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
 
-import normalize from "../lib/helper/RulesNormalize"
+import normalize, {RuleValidationError} from "../lib/helper/RulesNormalize"
 import Logger from "../lib/Logger";
 import RouteRule from "../lib/domain/access-log/RouteRule";
 
 Logger.configuration.debug=false;
 
 describe("Rules normalization",()=>{
-	it("should remove rules that are null or not objects",removesInvalidRules);
+	it("should throw for invalid rules",throwsForInvalidRules);
  	describe("Paths",()=>{
- 		it("should remove only rules with invalid paths",removesInvalidPaths);
+ 		it("should throw for rules with invalid paths",throwsForInvalidPaths);
  		it("should clean paths URLs",cleansPathsUrls);
 		it("should convert glob pattern paths to regex",convertsGlobPathsToRegex);
 		it("should correctly resolve glob paths",correctlyResolvesGlobPaths);
 	});
- 	describe("Skip property",()=>{
-		it("should handle property skip not boolean",handlesSkipNotBoolean)
-	});
  	describe("Priority property",()=>{
  		it("should add property priority if missing, in correlation with the order defined",addsMissingPriority)
 	});
- 	describe("Conditional properties",()=>{
+ 	describe(".if conditional properties",()=>{
  		it("should delete invalid .if properties",deletesInvalidIfProperties);
  		it("should delete .if properties with invalid conditions or empty object",deletesEmptyIfProperties);
  		describe(".statusCode property",()=>{
@@ -35,7 +32,21 @@ describe("Rules normalization",()=>{
 			it("should wrap .test function into a safe call that only returns boolean",wrapsTestFunctions);
 		})
 	});
+ 	describe(".do act property",()=>{
+ 		it("should throw error for rules with invalid .do properties",throwsForInvalidDoProps);
+		describe("Skip property",()=>{
+			it("should throw if .skip is not a boolean",throwsWhenSkipNotBoolean)
+		});
+	})
 });
+
+function throwsForInvalidDoProps(){
+	const rules=getMockRules("do",[
+		{skip:true},false,{},null
+	]);
+
+	expect(normalize.bind(null,rules)).to.throw;
+}
 
 function deletesInvalidIfProperties(){
 	const rules=getMockRules("if",[
@@ -65,17 +76,9 @@ function deletesEmptyIfProperties(){
 }
 
 function wrapsTestFunctions(){
-	const rules=getMockRules("if",[
-		{
-			test(){
-				return "Rebel";
-			}
-		},
-		{
-			test(){
-				throw new Error();
-			}
-		}
+	const rules=getMockIfRules("test",[
+		()=>"Rebel",
+		()=>{throw new Error()}
 	]);
 	const normalized=normalize(rules);
 
@@ -188,10 +191,9 @@ function cleansPathsUrls(){
 
 function convertsGlobPathsToRegex(){
 	const rules:RouteRule[]=[
-		{path:"/users/index",do:{}}, //Stays the same
-		{path:"/users/**",do:{}}, //Is converted to regex
-		{path:"",do:{}}, //Is removed
-		{path:"/**/index.html",do:{}} //Is converted to regex
+		{path:"/users/index",do:{skip:false}}, //Stays the same
+		{path:"/users/**",do:{skip:false}}, //Is converted to regex
+		{path:"/**/index.html",do:{skip:false}} //Is converted to regex
 	];
 	const normalized=normalize(rules);
 
@@ -204,8 +206,8 @@ function convertsGlobPathsToRegex(){
 
 function correctlyResolvesGlobPaths(){
 	const rules:RouteRule[]=[
-		{path:"/users/**",do:{}}, //Is converted to regex
-		{path:"/**/index.html",do:{}} //Is converted to regex
+		{path:"/users/**",do:{skip:false}}, //Is converted to regex
+		{path:"/**/index.html",do:{skip:false}} //Is converted to regex
 	];
 	const normalized=normalize(rules);
 
@@ -228,45 +230,35 @@ function correctlyResolvesGlobPaths(){
 	expect(second.test("/l1/index.html")).to.be.true;
 }
 
-function handlesSkipNotBoolean(){
-	// @ts-ignore
-	const rules:RouteRule[]= getMockDoRules("skip",
-		["false","true",null,true]
-	);
-	const normalized=normalize(rules);
-
-	expect(normalized).to.have.length(4);
-	expect(normalized[0].do.skip).to.be.false;
-	expect(normalized[1].do.skip).to.be.false;
-	expect(normalized[2].do.skip).to.be.false;
-	expect(normalized[3].do.skip).to.be.true;
-}
-
-function removesInvalidPaths(){
-	const rules=getMockRules("path",[
-		45,true,null,undefined,"/users",/\/.*/,
+function throwsWhenSkipNotBoolean(){
+	const rules=getMockDoRules("skip",[
+		null,"false",1,0
 	]);
 
-	const normalized=normalize(rules);
+	for(let rule of rules){
+		expect(normalize.bind(null,[rule])).to.throw(RuleValidationError)
+			.that.has.property("key").that.equals("do.skip");
+	}
 
-	expect(normalized).to.have.length(2);
-	expect(normalized[0]).to.haveOwnProperty("path");
-	expect(normalized[1]).to.haveOwnProperty("path");
-
-	expect(normalized[0].path).to.be.a("string");
-	expect(normalized[1].path).to.be.instanceOf(RegExp);
 }
 
-function removesInvalidRules(){
-	const rules=[
-		null,4450,true,"rule",{path:"/",do:{}}
-	] as RouteRule[];
+function throwsForInvalidPaths(){
+	const rules=getMockRules("path",[
+		45,null,"",{}
+	]);
 
-	const normalized=normalize(rules);
+	for(let rule of rules){
+		expect(normalize.bind(null,[rule])).to.throw(RuleValidationError)
+			.that.has.property("key").that.equals("path");
+	}
+}
 
-	expect(normalized).to.have.length(1);
-	expect(normalized[0]).to.be.a.instanceOf(Object);
+function throwsForInvalidRules(){
+	const rules=[null,4450,"/users",false];
 
+	for(let rule of rules){
+		expect(normalize.bind(null,[rule])).to.throw(RuleValidationError);
+	}
 }
 
 function getMockIfRules(withIfKey:string,values:any[]):RouteRule[]{
@@ -284,17 +276,27 @@ function getMockIfRules(withIfKey:string,values:any[]):RouteRule[]{
 	})
 }
 
-function getMockDoRules(doKey:string,values:any[]){
+function getMockDoRules(withIfKey:string,values:any[]):RouteRule[]{
 	return values.map(v=>{
-		let rule={path:"/",do:{}};
-		rule.do[doKey]=v;
-		return rule;
+		let mock={
+			path:"/",
+			do:{
+				skip:false,
+			}
+		} as RouteRule;
+		mock.do[withIfKey]=v;
+		return mock;
 	})
 }
 
 function getMockRules(withKey:string,values:any[]):RouteRule[]{
 	return values.map(v=>{
-		let rule={path:"/",do:{}};
+		let rule={
+			path:"/",
+			do:{
+				skip:false,
+			}
+		};
 		rule[withKey]=v;
 		return rule;
 	})
