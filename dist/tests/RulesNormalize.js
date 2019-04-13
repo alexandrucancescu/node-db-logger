@@ -14,7 +14,7 @@ mocha_1.describe("Rules normalization", () => {
         mocha_1.it("should convert glob pattern paths to regex", convertsGlobPathsToRegex);
         mocha_1.it("should correctly resolve glob paths", correctlyResolvesGlobPaths);
     });
-    mocha_1.describe("Priority property", () => {
+    mocha_1.describe(".priority property", () => {
         mocha_1.it("should add property priority if missing, in correlation with the order defined", addsMissingPriority);
     });
     mocha_1.describe(".if conditional properties", () => {
@@ -33,11 +33,98 @@ mocha_1.describe("Rules normalization", () => {
     });
     mocha_1.describe(".do act property", () => {
         mocha_1.it("should throw error for rules with invalid .do properties", throwsForInvalidDoProps);
-        mocha_1.describe("Skip property", () => {
+        mocha_1.describe(".skip property", () => {
             mocha_1.it("should throw if .skip is not a boolean", throwsWhenSkipNotBoolean);
+        });
+        mocha_1.describe(".set property", () => {
+            mocha_1.describe(".request property", () => {
+                mocha_1.describe(".headers property", () => {
+                    mocha_1.it("should remove invalid request headers from the array", removesInvalidHeadersOf.bind(null, "request"));
+                    mocha_1.it("should only allow array/boolean for header property", onlyAllowsArrayOrBooleanForHeadersOf.bind(null, "request"));
+                });
+                mocha_1.describe("other boolean properties", () => {
+                    mocha_1.it("should only allow booleans for properties .query .userData .body", onlyAllowsBooleanForRequestProperties);
+                });
+            });
+            mocha_1.describe(".response property", () => {
+                mocha_1.describe(".headers property", () => {
+                    mocha_1.it("should remove invalid response headers from the array", removesInvalidHeadersOf.bind(null, "response"));
+                    mocha_1.it("should only allow array/boolean for header property", onlyAllowsArrayOrBooleanForHeadersOf.bind(null, "request"));
+                });
+                mocha_1.describe("other boolean properties", () => {
+                    mocha_1.it("should only allow booleans for properties .query .userData .body", onlyAllowsBooleanForResponseProperties);
+                });
+            });
         });
     });
 });
+function onlyAllowsBooleanForResponseProperties() {
+    const rules = getMockDoRules("set", [
+        {
+            response: {
+                body: null,
+            }
+        },
+        {
+            response: {
+                body: true,
+            }
+        }
+    ]);
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].do.set.response).to.not.haveOwnProperty("body");
+    chai_1.expect(normalized[1].do.set.response).to.haveOwnProperty("body");
+}
+function onlyAllowsBooleanForRequestProperties() {
+    const rules = getMockDoRules("set", [
+        {
+            request: {
+                body: null,
+                userData: { x: 1 },
+                query: 9999,
+            }
+        },
+        {
+            request: {
+                body: true,
+                userData: true,
+                query: false,
+            }
+        }
+    ]);
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].do.set.request).to.not.haveOwnProperty("body");
+    chai_1.expect(normalized[0].do.set.request).to.not.haveOwnProperty("userData");
+    chai_1.expect(normalized[0].do.set.request).to.not.haveOwnProperty("query");
+    chai_1.expect(normalized[1].do.set.request).to.haveOwnProperty("body");
+    chai_1.expect(normalized[1].do.set.request).to.haveOwnProperty("userData");
+    chai_1.expect(normalized[1].do.set.request).to.haveOwnProperty("query");
+}
+function onlyAllowsArrayOrBooleanForHeadersOf(key) {
+    const rules = getMockHeaderRules(key, [
+        false,
+        true,
+        { x: 1 },
+        ["user-agent", "accept"]
+    ]);
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].do.set[key]).to.haveOwnProperty("headers");
+    chai_1.expect(normalized[1].do.set[key]).to.haveOwnProperty("headers");
+    chai_1.expect(normalized[2].do.set[key]).to.not.haveOwnProperty("headers");
+    chai_1.expect(normalized[3].do.set[key]).to.haveOwnProperty("headers");
+}
+function removesInvalidHeadersOf(key) {
+    const rules = getMockHeaderRules(key, [
+        [null, 3, 4, "user-agent"],
+        [{}, ""]
+    ]);
+    const normalized = RulesNormalize_1.default(rules);
+    chai_1.expect(normalized[0].do.set[key]).to.haveOwnProperty("headers");
+    chai_1.expect(normalized[0].do.set[key].headers).to.be.an.instanceOf(Array);
+    chai_1.expect(normalized[0].do.set[key].headers).to.have.length(1);
+    chai_1.expect(normalized[0].do.set[key].headers[0]).to.equal("user-agent");
+    chai_1.expect(normalized[1].do.set[key]).to.not.haveOwnProperty("headers");
+}
 function throwsForInvalidDoProps() {
     const rules = getMockRules("do", [
         { skip: true }, false, {}, null
@@ -206,6 +293,20 @@ function throwsForInvalidRules() {
     for (let rule of rules) {
         chai_1.expect(RulesNormalize_1.default.bind(null, [rule])).to.throw(RuleValidationError_1.default);
     }
+}
+// MOCK RULES GENERATORS
+function getMockHeaderRules(forKey, values) {
+    return values.map(v => {
+        let mock = {
+            path: "/",
+            do: {
+                skip: false,
+                set: {}
+            }
+        };
+        mock.do.set[forKey] = { headers: v };
+        return mock;
+    });
 }
 function getMockIfRules(withIfKey, values) {
     return values.map(v => {

@@ -16,7 +16,7 @@ describe("Rules normalization",()=>{
 		it("should convert glob pattern paths to regex",convertsGlobPathsToRegex);
 		it("should correctly resolve glob paths",correctlyResolvesGlobPaths);
 	});
- 	describe("Priority property",()=>{
+ 	describe(".priority property",()=>{
  		it("should add property priority if missing, in correlation with the order defined",addsMissingPriority)
 	});
  	describe(".if conditional properties",()=>{
@@ -35,11 +35,111 @@ describe("Rules normalization",()=>{
 	});
  	describe(".do act property",()=>{
  		it("should throw error for rules with invalid .do properties",throwsForInvalidDoProps);
-		describe("Skip property",()=>{
+		describe(".skip property",()=>{
 			it("should throw if .skip is not a boolean",throwsWhenSkipNotBoolean)
+		});
+		describe(".set property",()=>{
+			describe(".request property",()=>{
+				describe(".headers property",()=>{
+					it("should remove invalid request headers from the array",removesInvalidHeadersOf.bind(null,"request"));
+					it("should only allow array/boolean for header property",onlyAllowsArrayOrBooleanForHeadersOf.bind(null,"request"));
+				});
+				describe("other boolean properties",()=>{
+					it("should only allow booleans for properties .query .userData .body",onlyAllowsBooleanForRequestProperties)
+				})
+			});
+			describe(".response property",()=>{
+				describe(".headers property",()=>{
+					it("should remove invalid response headers from the array",removesInvalidHeadersOf.bind(null,"response"));
+					it("should only allow array/boolean for header property",onlyAllowsArrayOrBooleanForHeadersOf.bind(null,"request"));
+				});
+				describe("other boolean properties",()=>{
+					it("should only allow booleans for properties .query .userData .body",onlyAllowsBooleanForResponseProperties)
+				})
+			})
 		});
 	})
 });
+
+function onlyAllowsBooleanForResponseProperties(){
+	const rules=getMockDoRules("set",[
+		{
+			response:{
+				body:null,
+			}
+		},
+		{
+			response:{
+				body:true,
+			}
+		}
+	]);
+
+	const normalized=normalize(rules);
+
+	expect(normalized[0].do.set.response).to.not.haveOwnProperty("body");
+
+	expect(normalized[1].do.set.response).to.haveOwnProperty("body");
+}
+
+function onlyAllowsBooleanForRequestProperties(){
+	const rules=getMockDoRules("set",[
+		{
+			request:{
+				body:null,
+				userData:{x:1},
+				query:9999,
+			}
+		},
+		{
+			request:{
+				body:true,
+				userData:true,
+				query:false,
+			}
+		}
+	]);
+
+	const normalized=normalize(rules);
+
+	expect(normalized[0].do.set.request).to.not.haveOwnProperty("body");
+	expect(normalized[0].do.set.request).to.not.haveOwnProperty("userData");
+	expect(normalized[0].do.set.request).to.not.haveOwnProperty("query");
+
+	expect(normalized[1].do.set.request).to.haveOwnProperty("body");
+	expect(normalized[1].do.set.request).to.haveOwnProperty("userData");
+	expect(normalized[1].do.set.request).to.haveOwnProperty("query");
+}
+
+function onlyAllowsArrayOrBooleanForHeadersOf(key:"request"|"response"){
+	const rules=getMockHeaderRules(key,[
+		false,
+		true,
+		{x:1}, //gets removed
+		["user-agent","accept"]
+	]);
+	const normalized=normalize(rules);
+
+	expect(normalized[0].do.set[key]).to.haveOwnProperty("headers");
+	expect(normalized[1].do.set[key]).to.haveOwnProperty("headers");
+	expect(normalized[2].do.set[key]).to.not.haveOwnProperty("headers");
+	expect(normalized[3].do.set[key]).to.haveOwnProperty("headers");
+}
+
+function removesInvalidHeadersOf(key:"request"|"response"){
+	const rules=getMockHeaderRules(key,[
+		[null,3,4,"user-agent"],
+		[{},""]
+	]);
+	const normalized=normalize(rules);
+
+	expect(normalized[0].do.set[key]).to.haveOwnProperty("headers");
+	expect(normalized[0].do.set[key].headers).to.be.an.instanceOf(Array);
+	expect(normalized[0].do.set[key].headers).to.have.length(1);
+	expect(normalized[0].do.set[key].headers[0]).to.equal("user-agent");
+
+	expect(normalized[1].do.set[key]).to.not.haveOwnProperty("headers");
+}
 
 function throwsForInvalidDoProps(){
 	const rules=getMockRules("do",[
@@ -260,6 +360,23 @@ function throwsForInvalidRules(){
 	for(let rule of rules){
 		expect(normalize.bind(null,[rule])).to.throw(RuleValidationError);
 	}
+}
+
+
+// MOCK RULES GENERATORS
+
+function getMockHeaderRules(forKey:"request"|"response",values:any[]):RouteRule[]{
+	return values.map(v=>{
+		let mock={
+			path:"/",
+			do:{
+				skip:false,
+				set:{}
+			}
+		} as RouteRule;
+		mock.do.set[forKey]={headers:v};
+		return mock;
+	})
 }
 
 function getMockIfRules(withIfKey:string,values:any[]):RouteRule[]{
