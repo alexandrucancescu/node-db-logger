@@ -69,14 +69,10 @@ export function mimeMatch(target:string,pattern:string):boolean{
 	}
 
 	if(patternSub==="*"){
-		if(typeof targetSub!=="string" || targetSub.length<1){
-			return false;
-		}
-	}else if(patternSub!==targetSub){
-		return false;
+		return (typeof targetSub==="string" && targetSub.length>0)
+	}else{
+		return patternSub===targetSub;
 	}
-	
-	return true;
 
 }
 

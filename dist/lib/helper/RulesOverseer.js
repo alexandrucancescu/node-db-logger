@@ -10,13 +10,17 @@ class RulesOverseer {
     computeRouteAct(req, res) {
         const path = Generic_1.cleanUrl(req.originalUrl || req.url);
         const matchedRules = this.getRulesMatched(path, req, res).sort(priorityCompare);
+        // console.log(matchedRules.map((r:any)=>[r._originalPath,JSON.stringify(r.do.set)]));
         const acts = matchedRules.map(rule => rule.do);
         let mergedAct = null;
         if (acts.length === 1) {
             mergedAct = acts[0];
         }
+        else if (acts.length > 1) {
+            mergedAct = mergeWith({}, ...acts, (obj, src) => Array.isArray(src) ? src : undefined);
+        }
         else {
-            mergedAct = mergeWith(...acts, (obj, src) => Array.isArray(src) ? src : undefined);
+            mergedAct = { skip: true };
         }
         return mergedAct;
     }
@@ -49,15 +53,33 @@ function conditionsSatisfied(req, res, rule) {
             }
         }
         if (conditions.contentType) {
+            // console.log((rule as any)._originalPath,conditions.contentType,res.getHeader("content-type"))
+            if (contentTypeRuleMatches(res.getHeader("content-type"), conditions.contentType)) {
+                return true;
+            }
         }
     }
-    if (conditions.requestUnfulfilled && !res.headersSent) {
-        return true;
+    else { // If response headers were not sent, request was not fulfilled
+        if (conditions.requestUnfulfilled) {
+            return true;
+        }
     }
     if (conditions.test) {
         return conditions.test(req, res) === true;
     }
     return false;
+}
+/**
+ * @param contentType The content type of the HTTP response
+ * @param contentTypeRule The rule to match, can be a wildcard string or an array of wildcards
+ */
+function contentTypeRuleMatches(contentType, contentTypeRule) {
+    if (contentType === undefined)
+        return false;
+    if (Array.isArray(contentTypeRule)) {
+        return contentTypeRule.some(rule => Generic_1.mimeMatch(contentType, rule));
+    }
+    return Generic_1.mimeMatch(contentType, contentTypeRule);
 }
 /**
  * @return true if the status code matches the StatusCodeRule

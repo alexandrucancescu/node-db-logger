@@ -1,5 +1,5 @@
-import RouteRule, {Act, StatusCodeRule} from "../domain/access-log/RouteRule";
-import {cleanUrl, wildcardNumberMatch} from "../util/Generic";
+import RouteRule, {Act, ContentTypeRule, StatusCodeRule} from "../domain/access-log/RouteRule";
+import {cleanUrl, mimeMatch, wildcardNumberMatch} from "../util/Generic";
 import normalizeRules from "./RulesNormalize";
 import {Request,Response} from "express"
 import * as mergeWith from "lodash.mergewith"
@@ -15,14 +15,18 @@ export default class RulesOverseer{
 		const path=cleanUrl(req.originalUrl||req.url);
 		const matchedRules=this.getRulesMatched(path,req,res).sort(priorityCompare);
 
+		// console.log(matchedRules.map((r:any)=>[r._originalPath,JSON.stringify(r.do.set)]));
+
 		const acts=matchedRules.map(rule=>rule.do);
 
-		let mergedAct=null;
+		let mergedAct:Act=null;
 
 		if(acts.length===1){
 			mergedAct=acts[0];
+		}else if(acts.length>1){
+			mergedAct=mergeWith({},...acts,(obj,src)=>Array.isArray(src) ? src : undefined);
 		}else{
-			mergedAct=mergeWith(...acts,(obj,src)=>Array.isArray(src) ? src : undefined);
+			mergedAct={skip:true};
 		}
 
 		return mergedAct;
@@ -57,11 +61,15 @@ function conditionsSatisfied(req:Request,res:Response,rule:RouteRule):boolean{
 			}
 		}
 		if(conditions.contentType){
-
+			// console.log((rule as any)._originalPath,conditions.contentType,res.getHeader("content-type"))
+			if(contentTypeRuleMatches(res.getHeader("content-type") as string,conditions.contentType)){
+				return true;
+			}
 		}
-	}
-	if(conditions.requestUnfulfilled && !res.headersSent){
-		return true;
+	}else{ // If response headers were not sent, request was not fulfilled
+		if(conditions.requestUnfulfilled){
+			return true;
+		}
 	}
 
 	if(conditions.test){
@@ -69,6 +77,18 @@ function conditionsSatisfied(req:Request,res:Response,rule:RouteRule):boolean{
 	}
 
 	return false;
+}
+
+/**
+ * @param contentType The content type of the HTTP response
+ * @param contentTypeRule The rule to match, can be a wildcard string or an array of wildcards
+ */
+function contentTypeRuleMatches(contentType:string,contentTypeRule:ContentTypeRule):boolean{
+	if(contentType===undefined) return false;
+	if(Array.isArray(contentTypeRule)){
+		return contentTypeRule.some(rule=>mimeMatch(contentType,rule));
+	}
+	return mimeMatch(contentType,contentTypeRule);
 }
 
 /**

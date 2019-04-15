@@ -62,14 +62,11 @@ function mimeMatch(target, pattern) {
         return false;
     }
     if (patternSub === "*") {
-        if (typeof targetSub !== "string" || targetSub.length < 1) {
-            return false;
-        }
+        return (typeof targetSub === "string" && targetSub.length > 0);
     }
-    else if (patternSub !== targetSub) {
-        return false;
+    else {
+        return patternSub === targetSub;
     }
-    return true;
 }
 exports.mimeMatch = mimeMatch;
 /*
