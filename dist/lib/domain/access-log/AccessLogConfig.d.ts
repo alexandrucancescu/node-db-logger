@@ -1,5 +1,4 @@
-interface AccessLogConfig {
+export interface AccessLogConfig {
     removeTrailingSlash: boolean;
 }
 export declare const defaultConfig: AccessLogConfig;
-export {};

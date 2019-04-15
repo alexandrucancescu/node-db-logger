@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Generic_1 = require("../util/Generic");
+const Generic_1 = require("../../util/Generic");
 class RuleValidationError extends Error {
     constructor(rule, key) {
         super(null);

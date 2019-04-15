@@ -1,15 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Logger_1 = require("../Logger");
-function log(...args) {
-    if (Logger_1.default.configuration.debug) {
-        console.log(...args);
+const AccessLogger_1 = require("../logger/AccessLogger");
+exports.access = {
+    log(...args) {
+        if (AccessLogger_1.default.debugLog === true) {
+            console.log(...args);
+        }
+    },
+    error(...args) {
+        if (AccessLogger_1.default.debugLog === true) {
+            console.log(...args);
+        }
     }
-}
-function error(...args) {
-    if (Logger_1.default.configuration.debug) {
-        console.error(...args);
-    }
-}
-exports.default = { log, error };
+};
 //# sourceMappingURL=DebugLog.js.map

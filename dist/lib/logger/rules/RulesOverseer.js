@@ -1,14 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Generic_1 = require("../util/Generic");
+const Generic_1 = require("../../util/Generic");
 const RulesNormalize_1 = require("./RulesNormalize");
 const mergeWith = require("lodash.mergewith");
 class RulesOverseer {
-    constructor(rules) {
+    constructor(rules, trimSlash = true) {
         this.rules = RulesNormalize_1.default(rules);
+        this.trimSlash = trimSlash;
     }
     computeRouteAct(req, res) {
-        const path = Generic_1.cleanUrl(req.originalUrl || req.url);
+        const path = Generic_1.cleanUrl(req.originalUrl || req.url, this.trimSlash);
         const matchedRules = this.getRulesMatched(path, req, res).sort(priorityCompare);
         // console.log(matchedRules.map((r:any)=>[r._originalPath,JSON.stringify(r.do.set)]));
         const acts = matchedRules.map(rule => rule.do);

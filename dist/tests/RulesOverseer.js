@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mocha_1 = require("mocha");
 const chai_1 = require("chai");
-const RulesOverseer_1 = require("../lib/helper/RulesOverseer");
+const RulesOverseer_1 = require("../lib/logger/rules/RulesOverseer");
 mocha_1.describe("Rules Overseer", () => {
     mocha_1.it("should return the correct act based on path rules", returnsCorrectActPathRules);
     mocha_1.it("should return the merged act from multiple rules", returnsMergedActFromRules);
@@ -12,7 +12,31 @@ mocha_1.describe("Rules Overseer", () => {
     mocha_1.it("should correctly resolve the custom test conditional", resolvesTheTestConditional);
     mocha_1.it("should correctly resolve the requestUnfulfilled conditional", resolvesRequestUnfulfilledConditional);
     mocha_1.it("should correctly resolve multiple conditionals until one is true or none are", resolvesMultipleConditionals);
+    mocha_1.it("should also compare trailing slashes on paths when trimSlash is false", comparesTrailingSlash);
 });
+function comparesTrailingSlash() {
+    const overseer = new RulesOverseer_1.default([
+        {
+            path: "/company",
+            do: {
+                set: {
+                    request: {
+                        headers: ["user-agent"]
+                    }
+                }
+            }
+        }
+    ], false);
+    const req_no_trailing = mockRequest({ path: "/company" });
+    const req_trailing = mockRequest({ path: "/company/" });
+    chai_1.expect(overseer.computeRouteAct(req_no_trailing, res_html_200))
+        .to.have.ownProperty("set")
+        .which.has.ownProperty("request")
+        .which.has.ownProperty("headers")
+        .which.deep.equals(["user-agent"]);
+    chai_1.expect(overseer.computeRouteAct(req_trailing, res_html_200))
+        .to.not.have.ownProperty("set");
+}
 function returnsCorrectActPathRules() {
     const response = { headersSent: true };
     const overseer = new RulesOverseer_1.default([

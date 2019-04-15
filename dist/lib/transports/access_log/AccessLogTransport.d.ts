@@ -1,5 +1,5 @@
-import RulesOverseer from "../../helper/RulesOverseer";
-import AccessLogEntry from "../../domain/access-log/AcessLogEntry";
+import RulesOverseer from "../../logger/rules/RulesOverseer";
+import AccessLogEntry from "../../domain/access-log/AccessLogEntry";
 export default abstract class AccessLogTransport {
     private readonly rulesOverseer;
     constructor(rulesOverseer: RulesOverseer);

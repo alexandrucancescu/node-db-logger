@@ -1,4 +1,4 @@
-import PublicRouteRule, { Path } from "../domain/access-log/RouteRule";
+import PublicRouteRule, { Path } from "../../domain/access-log/RouteRule";
 declare type RouteRule = PublicRouteRule & {
     _originalPath?: Path;
 };

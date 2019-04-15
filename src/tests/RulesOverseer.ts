@@ -1,6 +1,6 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
-import RulesOverseer from "../lib/helper/RulesOverseer";
+import RulesOverseer from "../lib/logger/rules/RulesOverseer";
 import {Request,Response} from "express"
 
 describe("Rules Overseer",()=>{
@@ -12,7 +12,37 @@ describe("Rules Overseer",()=>{
 	it("should correctly resolve the custom test conditional",resolvesTheTestConditional);
 	it("should correctly resolve the requestUnfulfilled conditional",resolvesRequestUnfulfilledConditional);
 	it("should correctly resolve multiple conditionals until one is true or none are",resolvesMultipleConditionals)
+	it("should also compare trailing slashes on paths when trimSlash is false",comparesTrailingSlash)
 });
+
+
+function comparesTrailingSlash(){
+
+	const overseer=new RulesOverseer([
+		{
+			path:"/company",
+			do:{
+				set:{
+					request:{
+						headers:["user-agent"]
+					}
+				}
+			}
+		}
+	],false);
+
+	const req_no_trailing=mockRequest({path:"/company"});
+	const req_trailing=mockRequest({path:"/company/"});
+
+	expect(overseer.computeRouteAct(req_no_trailing,res_html_200))
+		.to.have.ownProperty("set")
+		.which.has.ownProperty("request")
+		.which.has.ownProperty("headers")
+		.which.deep.equals(["user-agent"]);
+
+	expect(overseer.computeRouteAct(req_trailing,res_html_200))
+		.to.not.have.ownProperty("set");
+}
 
 function returnsCorrectActPathRules(){
 	const response={headersSent:true} as Response;

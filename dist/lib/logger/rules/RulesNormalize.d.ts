@@ -1,4 +1,4 @@
-import PublicRouteRule, { Path } from "../domain/access-log/RouteRule";
+import PublicRouteRule, { Path } from "../../domain/access-log/RouteRule";
 declare type RouteRule = PublicRouteRule & {
     _originalPath?: Path;
 };
@@ -12,5 +12,5 @@ declare type RouteRule = PublicRouteRule & {
  * @param rules = rules passed to the RulesOverseer constructor
  * @returns the valid rules
  */
-export default function normalizeRules(rules: RouteRule[]): RouteRule[];
+export default function normalizeRules(rules: RouteRule[], trimSlash?: boolean): RouteRule[];
 export {};

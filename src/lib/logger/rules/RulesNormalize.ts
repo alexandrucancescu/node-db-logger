@@ -1,6 +1,6 @@
-import PublicRouteRule, {Path} from "../domain/access-log/RouteRule";
-import debug from "../util/DebugLog";
-import {cleanUrl, deleteProp, getProp} from "../util/Generic";
+import PublicRouteRule, {Path} from "../../domain/access-log/RouteRule";
+import {access as debug} from "../../util/DebugLog";
+import {cleanUrl, deleteProp, getProp} from "../../util/Generic";
 import * as isGlob from "is-glob"
 import {makeRe as globToRegex} from "micromatch"
 import RuleValidationError from "./RuleValidationError";
@@ -19,7 +19,7 @@ type RouteRule=PublicRouteRule&{
  * @param rules = rules passed to the RulesOverseer constructor
  * @returns the valid rules
  */
-export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
+export default function normalizeRules(rules:RouteRule[],trimSlash:boolean=true):RouteRule[]{
 	if(!Array.isArray(rules)){
 		return [];
 	}
@@ -31,7 +31,7 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 			throw new RuleValidationError(rule).invalidRule();
 		}
 
-		normalizePath(rule);
+		normalizePath(rule,trimSlash);
 		normalizeConditionals(rule);
 		normalizeAct(rule);
 
@@ -52,7 +52,7 @@ export default function normalizeRules(rules:RouteRule[]):RouteRule[]{
 	});
 }
 
-function normalizePath(rule:RouteRule){
+function normalizePath(rule:RouteRule,trimSlash:boolean=true){
 	//Save the original path for debugging purposes
 	rule._originalPath=rule.path;
 
@@ -64,7 +64,7 @@ function normalizePath(rule:RouteRule){
 		if(isGlob(rule.path)){
 			rule.path=globToRegex(rule.path);
 		}else{
-			rule.path=cleanUrl(rule.path);
+			rule.path=cleanUrl(rule.path,trimSlash);
 		}
 	}else if(!(rule.path instanceof RegExp)){
 		throw new RuleValidationError(rule,"path").shouldBe("string/RegExp")

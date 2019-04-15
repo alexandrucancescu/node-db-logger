@@ -1,16 +1,14 @@
-import Logger from "../Logger";
+import AccessLogger from "../logger/AccessLogger";
 
-function log(...args){
-	if (Logger.configuration.debug) {
-		console.log(...args);
+export const access={
+	log(...args){
+		if(AccessLogger.debugLog===true){
+			console.log(...args);
+		}
+	},
+	error(...args){
+		if(AccessLogger.debugLog===true){
+			console.log(...args);
+		}
 	}
-}
-
-function error(...args){
-	if (Logger.configuration.debug) {
-		console.error(...args);
-	}
-}
-
-
-export default {log,error};
+};

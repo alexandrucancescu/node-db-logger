@@ -1,5 +1,5 @@
 
-interface AccessLogConfig {
+export interface AccessLogConfig {
 	removeTrailingSlash:boolean;
 }
 

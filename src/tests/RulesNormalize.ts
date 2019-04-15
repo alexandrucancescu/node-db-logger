@@ -1,8 +1,8 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
 
-import normalize from "../lib/helper/RulesNormalize"
-import RuleValidationError from "../lib/helper/RuleValidationError"
+import normalize from "../lib/logger/rules/RulesNormalize"
+import RuleValidationError from "../lib/logger/rules/RuleValidationError"
 import Logger from "../lib/Logger";
 import RouteRule from "../lib/domain/access-log/RouteRule";
 import {Error} from "mongoose";

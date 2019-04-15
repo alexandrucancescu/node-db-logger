@@ -1,7 +1,4 @@
-declare function log(...args: any[]): void;
-declare function error(...args: any[]): void;
-declare const _default: {
-    log: typeof log;
-    error: typeof error;
+export declare const access: {
+    log(...args: any[]): void;
+    error(...args: any[]): void;
 };
-export default _default;

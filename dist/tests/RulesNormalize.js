@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mocha_1 = require("mocha");
 const chai_1 = require("chai");
-const RulesNormalize_1 = require("../lib/helper/RulesNormalize");
-const RuleValidationError_1 = require("../lib/helper/RuleValidationError");
+const RulesNormalize_1 = require("../lib/logger/rules/RulesNormalize");
+const RuleValidationError_1 = require("../lib/logger/rules/RuleValidationError");
 const Logger_1 = require("../lib/Logger");
 const mongoose_1 = require("mongoose");
 Logger_1.default.configuration.debug = false;

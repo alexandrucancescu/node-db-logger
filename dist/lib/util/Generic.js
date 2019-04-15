@@ -81,7 +81,7 @@ exports.getProcessTimeMs = getProcessTimeMs;
     Cleans URL paths from trailing slashes and query parameters
     Expects input URL to be valid
  */
-function cleanUrl(url) {
+function cleanUrl(url, trimSlash = true) {
     let cleaning = url;
     if (cleaning.length > 1) {
         //Remove query parameters
@@ -89,7 +89,9 @@ function cleanUrl(url) {
             cleaning = cleaning.split("?").shift();
         }
         //Remove trailing slash
-        cleaning = cleaning.replace(/\/$/, "");
+        if (trimSlash) {
+            cleaning = cleaning.replace(/\/$/, "");
+        }
     }
     else if (cleaning.length < 1) {
         cleaning = "/";

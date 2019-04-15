@@ -1,5 +1,5 @@
-import {getProp} from "../util/Generic";
-import PublicRouteRule , {Path} from "../domain/access-log/RouteRule";
+import {getProp} from "../../util/Generic";
+import PublicRouteRule , {Path} from "../../domain/access-log/RouteRule";
 
 type RouteRule=PublicRouteRule&{
 	_originalPath?:Path

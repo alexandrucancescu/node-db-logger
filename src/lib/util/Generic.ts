@@ -89,7 +89,7 @@ export function getProcessTimeMs():number{
 	Cleans URL paths from trailing slashes and query parameters
 	Expects input URL to be valid
  */
-export function cleanUrl(url:string):string{
+export function cleanUrl(url:string,trimSlash:boolean=true):string{
 	let cleaning=url;
 	if(cleaning.length>1){
 		//Remove query parameters
@@ -98,7 +98,9 @@ export function cleanUrl(url:string):string{
 		}
 
 		//Remove trailing slash
-		cleaning=cleaning.replace(/\/$/,"");
+		if(trimSlash){
+			cleaning=cleaning.replace(/\/$/,"");
+		}
 	}else if(cleaning.length<1){
 		cleaning="/";
 	}

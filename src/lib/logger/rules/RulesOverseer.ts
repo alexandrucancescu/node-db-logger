@@ -1,18 +1,20 @@
-import RouteRule, {Act, ContentTypeRule, StatusCodeRule} from "../domain/access-log/RouteRule";
-import {cleanUrl, mimeMatch, wildcardNumberMatch} from "../util/Generic";
+import RouteRule, {Act, ContentTypeRule, StatusCodeRule} from "../../domain/access-log/RouteRule";
+import {cleanUrl, mimeMatch, wildcardNumberMatch} from "../../util/Generic";
 import normalizeRules from "./RulesNormalize";
 import {Request,Response} from "express"
 import * as mergeWith from "lodash.mergewith"
 
 export default class RulesOverseer{
 	private readonly rules:RouteRule[];
+	private readonly trimSlash:boolean;
 
-	constructor(rules:RouteRule[]){
+	constructor(rules:RouteRule[],trimSlash:boolean=true){
 		this.rules=normalizeRules(rules);
+		this.trimSlash=trimSlash;
 	}
 
 	public computeRouteAct(req:Request,res:Response):Act{
-		const path=cleanUrl(req.originalUrl||req.url);
+		const path= cleanUrl(req.originalUrl||req.url,this.trimSlash);
 		const matchedRules=this.getRulesMatched(path,req,res).sort(priorityCompare);
 
 		// console.log(matchedRules.map((r:any)=>[r._originalPath,JSON.stringify(r.do.set)]));
