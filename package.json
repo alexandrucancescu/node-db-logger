@@ -9,6 +9,7 @@
   "author": "Alexandru Cancescu",
   "license": "MIT",
   "dependencies": {
+    "ipaddr.js": "^1.9.0",
     "is-glob": "^4.0.1",
     "lodash.merge": "^4.6.1",
     "lodash.mergewith": "^4.6.1",

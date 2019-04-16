@@ -1,4 +1,3 @@
-import LogEntryBase from "../LogEntryBase";
 export interface AccessLogEntryRequest {
     remote_address: string;
     headers?: {
@@ -9,6 +8,7 @@ export interface AccessLogEntryRequest {
     query?: {
         [key: string]: string | string[];
     };
+    body?: any;
     userData?: any;
 }
 export interface AccessLogEntryResponse {
@@ -20,7 +20,7 @@ export interface AccessLogEntryResponse {
     };
     body?: any;
 }
-export default interface AccessLogEntry extends LogEntryBase {
+export default interface AccessLogEntry {
     request: AccessLogEntryRequest;
     response: AccessLogEntryResponse;
 }

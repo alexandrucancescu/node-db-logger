@@ -1,5 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const ipaddr_js_1 = require("ipaddr.js");
+function cleanIp(ip) {
+    if (ipaddr_js_1.IPv6.isValid(ip)) {
+        const address = ipaddr_js_1.IPv6.parse(ip);
+        if (address.isIPv4MappedAddress()) {
+            return address.toIPv4Address().toString();
+        }
+    }
+    return ip;
+}
+exports.cleanIp = cleanIp;
 function deleteProp(of, prop) {
     if (typeof prop !== "string" || typeof of !== "object" || of === null) {
         return false;

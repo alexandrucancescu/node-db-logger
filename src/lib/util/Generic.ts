@@ -1,3 +1,14 @@
+import {IPv6} from "ipaddr.js";
+
+export function cleanIp(ip:string):string{
+	if(IPv6.isValid(ip)){
+		const address=IPv6.parse(ip);
+		if(address.isIPv4MappedAddress()){
+			return address.toIPv4Address().toString();
+		}
+	}
+	return ip;
+}
 
 type AnyObject={[s:string]:any};
 

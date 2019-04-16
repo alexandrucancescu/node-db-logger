@@ -1,3 +1,4 @@
+export declare function cleanIp(ip: string): string;
 declare type AnyObject = {
     [s: string]: any;
 };
