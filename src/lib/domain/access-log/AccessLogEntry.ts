@@ -1,7 +1,7 @@
 
 export interface AccessLogEntryRequest{
 	remote_address:string;
-	headers?:{[key:string]:string}
+	headers?:{[key:string]:string|string[]}
 	method:string;
 	path:string;
 	query?:{[key:string]:string|string[]};

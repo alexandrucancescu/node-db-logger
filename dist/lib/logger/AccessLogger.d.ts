@@ -11,5 +11,11 @@ export default class AccessLogger {
     readonly express: RequestHandler;
     private requestHandler;
     private requestFinished;
+    /**
+     * Sends a access log entry to all the transports in a async manner,
+     * so they don't wait after each other
+     * @param entry
+     */
+    private sendToTransports;
     private static validateTransports;
 }

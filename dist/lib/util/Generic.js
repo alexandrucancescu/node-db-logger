@@ -94,18 +94,19 @@ exports.getProcessTimeMs = getProcessTimeMs;
  */
 function cleanUrl(url, trimSlash = true) {
     let cleaning = url;
-    if (cleaning.length > 1) {
-        //Remove query parameters
-        if (cleaning.indexOf("?") > -1) {
-            cleaning = cleaning.split("?").shift();
-        }
+    //Remove query parameters
+    if (cleaning.indexOf("?") > -1) {
+        cleaning = cleaning.split("?").shift();
+    }
+    //If url has 1 or 0 characters it means it it the root, "/"
+    if (cleaning.length <= 1) {
+        cleaning = "/";
+    }
+    else {
         //Remove trailing slash
         if (trimSlash) {
             cleaning = cleaning.replace(/\/$/, "");
         }
-    }
-    else if (cleaning.length < 1) {
-        cleaning = "/";
     }
     return cleaning;
 }
