@@ -1,6 +1,6 @@
 {
   "name": "node-db-logger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Modular logger for nodejs",
   "main": "dist/lib/index.js",
   "scripts": {
