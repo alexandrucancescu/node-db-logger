@@ -27,7 +27,8 @@ export function mountRoutes(){
 		"/test_req_body_headers",
 	];
 
-	app.use(emptyResponseRoutes,(ignored_req,res,ignored_next)=>res.sendStatus(200).end());
+	app.use(emptyResponseRoutes,(req,res,ignored_next)=>res.status(200).send("OKY"));
+
 	app.mkactivity("/test_info",(ignored_req,res,ignored_next)=>res.sendStatus(309).end());
 
 	app.get("/test_res_headers",(ignored_req,res,ignored_next)=> {

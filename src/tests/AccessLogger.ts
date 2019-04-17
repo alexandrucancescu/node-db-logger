@@ -115,13 +115,16 @@ async function sendsBodyAndAllHeaders(){
 		data:DATA
 	});
 
-	expect(transport.transport).to.have.been.calledWith(
+	expect(transport.transport).to.have.been
+		.calledWithExactly(
 		{
 			request: {
 				method: METHOD,
 				path: PATH,
 				remote_address: HOST,
-				headers:match.has('user-agent').and(match.has('content-type')).and(match.has('host')),
+				headers:match.has('user-agent',"JamesBond/1.3 Gecko/0.9")
+					.and(match.has('content-type',"application/json"))
+					.and(match.has('host',match.string)),
 				body: DATA,
 			},
 			response: {
@@ -282,7 +285,7 @@ const rules:RouteRule[]=[
 		}
 	},
 	{
-		path:"/test_body_headers",
+		path:"/test_req_body_headers",
 		do:{
 			set:{
 				request:{
