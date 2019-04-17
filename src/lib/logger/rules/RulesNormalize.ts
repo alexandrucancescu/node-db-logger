@@ -15,8 +15,8 @@ type RouteRule=PublicRouteRule&{
  * Converts glob pattern paths to regex paths
  * Removes invalid properties from rules
  *
- *
  * @param rules = rules passed to the RulesOverseer constructor
+ * @param trimSlash = if paths should have their trailing slash removed
  * @returns the valid rules
  */
 export default function normalizeRules(rules:RouteRule[],trimSlash:boolean=true):RouteRule[]{

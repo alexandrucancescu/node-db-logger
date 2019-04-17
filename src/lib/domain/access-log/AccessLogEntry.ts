@@ -1,7 +1,7 @@
 
 export interface AccessLogEntryRequest{
 	remote_address:string;
-	headers?:{[key:string]:string|string[]}
+	headers?:{[header:string]:string|string[]}
 	method:string;
 	path:string;
 	query?:{[key:string]:string|string[]};
@@ -9,11 +9,11 @@ export interface AccessLogEntryRequest{
 	userData?:any;
 }
 
-export interface AccessLogEntryResponse{
+export interface AccessLogEntryResponse extends Object{
 	code?:number;
 	responseTime:number;
 	error?:any;
-	headers?:{[key:string]:string};
+	headers?:{[header:string]:string|string[]|number};
 	body?:any;
 }
 

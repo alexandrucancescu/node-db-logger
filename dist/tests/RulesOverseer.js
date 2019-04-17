@@ -237,72 +237,7 @@ const overseer_1 = new RulesOverseer_1.default([
             }
         },
         if: {
-            test(req, res) {
-                return req.headers.referer !== "google.com";
-            }
-        }
-    },
-    {
-        path: "/api/**",
-        do: {
-            skip: true
-        }
-    },
-    {
-        path: "/api/users",
-        do: {
-            skip: false,
-        },
-        if: {
-            requestUnfulfilled: true,
-        }
-    },
-]);
-const overseer_2 = new RulesOverseer_1.default([
-    {
-        path: "/**",
-        do: {
-            skip: false,
-            set: {
-                request: {
-                    query: true
-                }
-            }
-        },
-    },
-    {
-        path: "/company",
-        do: {
-            skip: true,
-        },
-        if: {
-            statusCode: ["4**", "5**"]
-        }
-    },
-    {
-        path: "/company/ceo",
-        do: {
-            set: {
-                response: {
-                    headers: ["content-type"]
-                }
-            }
-        },
-        if: {
-            contentType: "application/*"
-        }
-    },
-    {
-        path: "/about_us",
-        do: {
-            set: {
-                request: {
-                    userData: true
-                }
-            }
-        },
-        if: {
-            test(req, res) {
+            test(req) {
                 return req.headers.referer !== "google.com";
             }
         }

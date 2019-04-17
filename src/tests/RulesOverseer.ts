@@ -11,8 +11,8 @@ describe("Rules Overseer",()=>{
 	it("should correctly resolve the contentType conditional",resolvesContentTypeConditional);
 	it("should correctly resolve the custom test conditional",resolvesTheTestConditional);
 	it("should correctly resolve the requestUnfulfilled conditional",resolvesRequestUnfulfilledConditional);
-	it("should correctly resolve multiple conditionals until one is true or none are",resolvesMultipleConditionals)
-	it("should also compare trailing slashes on paths when trimSlash is false",comparesTrailingSlash)
+	it("should correctly resolve multiple conditionals until one is true or none are",resolvesMultipleConditionals);
+	it("should also compare trailing slashes on paths when trimSlash is false",comparesTrailingSlash);
 });
 
 
@@ -289,73 +289,7 @@ const overseer_1=new RulesOverseer([
 			}
 		},
 		if:{
-			test(req:Request,res:Response):boolean{
-				return req.headers.referer!=="google.com"
-			}
-		}
-	},
-	{
-		path:"/api/**",
-		do:{
-			skip:true
-		}
-	},
-	{
-		path:"/api/users",
-		do:{
-			skip:false,
-		},
-		if:{
-			requestUnfulfilled:true,
-		}
-	},
-]);
-
-const overseer_2=new RulesOverseer([
-	{
-		path: "/**",
-		do: {
-			skip: false,
-			set: {
-				request: {
-					query: true
-				}
-			}
-		},
-	},
-	{
-		path:"/company",
-		do:{
-			skip:true,
-		},
-		if:{
-			statusCode:["4**","5**"]
-		}
-	},
-	{
-		path:"/company/ceo",
-		do:{
-			set:{
-				response:{
-					headers:["content-type"]
-				}
-			}
-		},
-		if:{
-			contentType:"application/*"
-		}
-	},
-	{
-		path:"/about_us",
-		do:{
-			set:{
-				request:{
-					userData:true
-				}
-			}
-		},
-		if:{
-			test(req:Request,res:Response):boolean{
+			test(req:Request):boolean{
 				return req.headers.referer!=="google.com"
 			}
 		}

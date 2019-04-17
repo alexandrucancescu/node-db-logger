@@ -34,55 +34,87 @@ class AccessLogger {
         if (!act || act.skip === true) {
             return;
         }
-        const path = Generic_1.cleanUrl(req.originalUrl || req.url, this.config.removeTrailingSlash);
         const entry = {
-            request: {
-                method: req.method.toUpperCase(),
-                path,
-                remote_address: Generic_1.cleanIp(req.connection.remoteAddress),
-            },
-            response: {
-                responseTime: response_time_ms,
-                code: res.headersSent ? res.statusCode : undefined
-            }
+            request: this.computeEntryRequest(act, req, res),
+            response: AccessLogger.computeEntryResponse(act, response_time_ms, req, res)
         };
-        if (act.set) {
-            if (act.set.request) {
-                if (act.set.request.query == true && req.query) {
-                    entry.request.query = req.query;
-                }
-                if (act.set.request.body === true && req.body !== undefined) {
-                    entry.request.body = req.body;
-                }
-                if (act.set.request.headers) {
-                    if (act.set.request.headers === true) {
-                        entry.request.headers = req.headers;
-                    }
-                    else if (Array.isArray(act.set.request.headers)) {
-                        entry.request.headers = {};
-                        for (let headerKey of act.set.request.headers) {
-                            if (req.headers[headerKey] !== undefined) {
-                                entry.request.headers[headerKey] = req.headers[headerKey];
-                            }
-                        }
-                    }
-                }
-                if (act.set.request.userData === true) {
-                    if (this.config.getUserData === undefined) {
-                        DebugLog_1.access.error(`For route ${path}, rule has set.request.userData=true but the getUserData function has not been defined`);
+        this.sendToTransports(entry);
+    }
+    static computeEntryResponse(act, res_time_ms, ignored_req, res) {
+        const entryResponse = {
+            responseTime: res_time_ms,
+            code: res.headersSent ? res.statusCode : null
+        };
+        if (act.set && act.set.response) {
+            if (act.set.response.headers) {
+                if (act.set.response.headers === true) {
+                    if (!res.headersSent) {
+                        entryResponse.headers = null;
                     }
                     else {
-                        try {
-                            entry.request.userData = this.config.getUserData(req, res);
+                        entryResponse.headers = res.getHeaders();
+                    }
+                }
+                else if (Array.isArray(act.set.response.headers)) {
+                    entryResponse.headers = {};
+                    const sentHeaders = res.getHeaders();
+                    for (let header of act.set.response.headers) {
+                        if (sentHeaders.hasOwnProperty(header)) {
+                            entryResponse.headers[header] = sentHeaders[header];
                         }
-                        catch (e) {
-                            DebugLog_1.access.error(`getUserData function threw error: ${e.toString()}`);
+                    }
+                }
+            }
+            //not supported yet as it needs to mount a write interceptor on the response
+            //which can significantly affect performance
+            // if(act.set.response.body===true){
+            //
+            // }
+        }
+        return entryResponse;
+    }
+    computeEntryRequest(act, req, res) {
+        const path = Generic_1.cleanUrl(req.originalUrl || req.url, this.config.removeTrailingSlash);
+        const entryRequest = {
+            method: req.method.toUpperCase(),
+            path,
+            remote_address: Generic_1.cleanIp(req.connection.remoteAddress)
+        };
+        if (act.set && act.set.request) {
+            if (act.set.request.query == true && req.query) {
+                entryRequest.query = req.query;
+            }
+            if (act.set.request.body === true && req.body !== undefined) {
+                entryRequest.body = req.body;
+            }
+            if (act.set.request.headers) {
+                if (act.set.request.headers === true) {
+                    entryRequest.headers = req.headers;
+                }
+                else if (Array.isArray(act.set.request.headers)) {
+                    entryRequest.headers = {};
+                    for (let header of act.set.request.headers) {
+                        if (req.headers.hasOwnProperty(header)) {
+                            entryRequest.headers[header] = req.headers[header];
                         }
+                    }
+                }
+            }
+            if (act.set.request.userData === true) {
+                if (!this.config.hasOwnProperty("getUserData")) {
+                    DebugLog_1.access.error(`For route ${path}, rule has set.request.userData=true but the getUserData function has not been defined`);
+                }
+                else {
+                    try {
+                        entryRequest.userData = this.config.getUserData(req, res);
+                    }
+                    catch (e) {
+                        DebugLog_1.access.error(`getUserData function threw error: ${e.toString()}`);
                     }
                 }
             }
         }
-        this.sendToTransports(entry);
+        return entryRequest;
     }
     /**
      * Sends a access log entry to all the transports in a async manner,

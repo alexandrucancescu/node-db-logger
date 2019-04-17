@@ -1,6 +1,6 @@
 import * as express from "express"
 import * as bodyParser from "body-parser"
-import {Server,createServer} from "http";
+import {createServer} from "http";
 import {RequestHandler} from "express";
 
 const app=express();
@@ -24,12 +24,17 @@ export function mountRoutes(){
 		"/test_skip",
 		"/test_skip_2",
 		"/test_ua_user_data",
-		"/test_body_headers",
+		"/test_req_body_headers",
 	];
 
 	app.use(emptyResponseRoutes,(ignored_req,res,ignored_next)=>res.sendStatus(200).end());
-
 	app.mkactivity("/test_info",(ignored_req,res,ignored_next)=>res.sendStatus(309).end());
+
+	app.get("/test_res_headers",(ignored_req,res,ignored_next)=> {
+		res.setHeader("x-powered-by", "nodejs");
+		res.setHeader("pragma", "no-cache");
+		res.contentType("application/json").json({ok:true});
+	})
 }
 
 export async function start(port:number=29876,ip:string="127.0.0.1"){

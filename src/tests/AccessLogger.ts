@@ -1,7 +1,7 @@
 import {describe,it,before,after,afterEach} from "mocha";
 import * as chai from "chai"
 import * as SinonChai from "sinon-chai"
-import {match,spy} from "sinon"
+import {match,spy,assert} from "sinon"
 import * as mockApp from "./mock/ExpressServer"
 import * as request from "phin"
 import AccessLogger from "../lib/logger/AccessLogger"
@@ -14,6 +14,7 @@ chai.use(SinonChai);
 const PORT=29876;
 const HOST="127.0.0.1";
 const URL=`http://${HOST}:${PORT}`;
+
 const USER_DATA={name:"Paul",age:30,privilege:"admin"};
 
 describe("AccessLogger",()=>{
@@ -31,10 +32,11 @@ describe("AccessLogger",()=>{
 		it("should skip request if skip:true and not call transport",skipsRequest);
 		it("should skip request if act is null and not call transport",skipsRequestActNull);
 
-		it("should send to the transport the correct http method, remote ip, path and response code",sendsCorrectInfo),
+		it("should send to the transport the correct http method, remote ip, path and response code",sendsCorrectInfo);
 		it("should send transport request info and query parameters",sendsQuery);
 		it("should send transport user-agent header and user data",sendsUaAndUserData);
 		it("should send transport the request body and all request headers",sendsBodyAndAllHeaders);
+		it("should send transport tht response headers",sendsResponseHeaders);
 
 		after(mockApp.stop);
 	});
@@ -98,7 +100,7 @@ async function sendsUaAndUserData(){
 }
 
 async function sendsBodyAndAllHeaders(){
-	const PATH="/test_body_headers";
+	const PATH="/test_req_body_headers";
 	const METHOD="POST";
 	const HEADERS={
 		'user-agent':'JamesBond/1.3 Gecko/0.9',
@@ -128,8 +130,34 @@ async function sendsBodyAndAllHeaders(){
 			}
 		}
 	)
+}
 
+async function sendsResponseHeaders(){
+	const PATH="/test_res_headers";
+	const METHOD="GET";
 
+	await request({
+		method:METHOD,
+		url:`${URL}${PATH}`,
+	});
+
+	expect(transport.transport).to.have.been.calledWith(
+		{
+			request: {
+				method: METHOD,
+				path: PATH,
+				remote_address: HOST,
+			},
+			response: {
+				code: 200,
+				responseTime:match.number,
+				headers:match.has("pragma","no-cache")
+					.and(match.has("x-powered-by","nodejs"))
+					.and(match.has("content-type",match(/application\/json.*/)))
+					.and(match.has("content-length",match(/[0-9]*/)))
+			}
+		}
+	);
 }
 
 async function sendsCorrectInfo(){
@@ -259,6 +287,16 @@ const rules:RouteRule[]=[
 			set:{
 				request:{
 					body:true,
+					headers:true,
+				}
+			}
+		}
+	},
+	{
+		path:"/test_res_headers",
+		do:{
+			set:{
+				response:{
 					headers:true,
 				}
 			}

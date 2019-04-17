@@ -1,7 +1,7 @@
-import AccessLogTransport from "./AccessLogTransport";
+import { IAccessLogTransport } from "./AccessLogTransport";
 import AccessLogEntry from "../../domain/access-log/AccessLogEntry";
-export default class ConsoleAccessLog extends AccessLogTransport {
+export default class ConsoleAccessLog implements IAccessLogTransport {
     private static formatResponseTime;
     private static format;
-    protected handleEntry(entry: AccessLogEntry): void;
+    transport(entry: AccessLogEntry): void;
 }

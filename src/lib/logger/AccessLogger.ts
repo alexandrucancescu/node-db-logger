@@ -3,9 +3,9 @@ import * as onRequestFinished from "on-finished";
 import {cleanIp, cleanUrl, getProcessTimeMs} from "../util/Generic";
 import {IAccessLogTransport} from "../transports/access_log/AccessLogTransport"
 import RulesOverseer from "./rules/RulesOverseer";
-import RouteRule from "../domain/access-log/RouteRule";
+import RouteRule, {Act} from "../domain/access-log/RouteRule";
 import {AccessLogConfig, mergeWithDefault} from "../domain/access-log/AccessLogConfig";
-import AccessLogEntry from "../domain/access-log/AccessLogEntry";
+import AccessLogEntry, {AccessLogEntryRequest, AccessLogEntryResponse} from "../domain/access-log/AccessLogEntry";
 import {access as debug} from "../util/DebugLog"
 
 export default class AccessLogger{
@@ -41,57 +41,92 @@ export default class AccessLogger{
 			return;
 		}
 
-		const path=cleanUrl(req.originalUrl||req.url,this.config.removeTrailingSlash);
-
-
 		const entry:AccessLogEntry={
-			request:{
-				method:req.method.toUpperCase(),
-				path,
-				remote_address:cleanIp(req.connection.remoteAddress),
-			},
-			response:{
-				responseTime:response_time_ms,
-				code: res.headersSent ? res.statusCode : undefined
-			}
+			request:this.computeEntryRequest(act,req,res),
+			response:AccessLogger.computeEntryResponse(act,response_time_ms,req,res)
 		};
 
-		if(act.set){
-			if(act.set.request){
-				if(act.set.request.query==true && req.query){
-					entry.request.query=req.query;
-				}
-				if(act.set.request.body===true && req.body!==undefined){
-					entry.request.body=req.body;
-				}
-				if(act.set.request.headers){
-					if(act.set.request.headers===true){
-						entry.request.headers=req.headers;
-					}else if(Array.isArray(act.set.request.headers)){
-						entry.request.headers={};
-						for(let headerKey of act.set.request.headers){
-							if(req.headers[headerKey]!==undefined){
-								entry.request.headers[headerKey]=req.headers[headerKey];
-							}
+		this.sendToTransports(entry);
+
+	}
+
+	private static computeEntryResponse(act:Act, res_time_ms:number, ignored_req:Request, res:Response):AccessLogEntryResponse{
+		const entryResponse:AccessLogEntryResponse={
+			responseTime:res_time_ms,
+			code: res.headersSent ? res.statusCode : null
+		};
+
+		if(act.set && act.set.response){
+			if(act.set.response.headers){
+				if(act.set.response.headers===true){
+					if(!res.headersSent){
+						entryResponse.headers=null;
+					}else{
+						entryResponse.headers=res.getHeaders();
+					}
+				}else if(Array.isArray(act.set.response.headers)){
+					entryResponse.headers={};
+					const sentHeaders=res.getHeaders();
+					for(let header of act.set.response.headers){
+						if(sentHeaders.hasOwnProperty(header)){
+							entryResponse.headers[header]=sentHeaders[header];
 						}
 					}
 				}
-				if(act.set.request.userData===true){
-					if(this.config.getUserData===undefined){
-						debug.error(`For route ${path}, rule has set.request.userData=true but the getUserData function has not been defined`);
-					}else{
-						try{
-							entry.request.userData=this.config.getUserData(req,res);
-						}catch (e) {
-							debug.error(`getUserData function threw error: ${e.toString()}`)
+			}
+			//not supported yet as it needs to mount a write interceptor on the response
+			//which can significantly affect performance
+			// if(act.set.response.body===true){
+			//
+			// }
+		}
+
+		return entryResponse;
+	}
+
+	private computeEntryRequest(act:Act,req:Request,res:Response):AccessLogEntryRequest{
+
+		const path=cleanUrl(req.originalUrl||req.url,this.config.removeTrailingSlash);
+
+		const entryRequest:AccessLogEntryRequest={
+			method:req.method.toUpperCase(),
+			path,
+			remote_address:cleanIp(req.connection.remoteAddress)
+		};
+
+		if(act.set && act.set.request){
+			if(act.set.request.query==true && req.query){
+				entryRequest.query=req.query;
+			}
+			if(act.set.request.body===true && req.body!==undefined){
+				entryRequest.body=req.body;
+			}
+			if(act.set.request.headers){
+				if(act.set.request.headers===true){
+					entryRequest.headers=req.headers;
+				}else if(Array.isArray(act.set.request.headers)){
+					entryRequest.headers={};
+					for(let header of act.set.request.headers){
+						if(req.headers.hasOwnProperty(header)){
+							entryRequest.headers[header]=req.headers[header];
 						}
+					}
+				}
+			}
+			if(act.set.request.userData===true){
+				if(!this.config.hasOwnProperty("getUserData")){
+					debug.error(`For route ${path}, rule has set.request.userData=true but the getUserData function has not been defined`);
+				}else{
+					try{
+						entryRequest.userData=this.config.getUserData(req,res);
+					}catch (e) {
+						debug.error(`getUserData function threw error: ${e.toString()}`)
 					}
 				}
 			}
 		}
 
-		this.sendToTransports(entry);
-
+		return entryRequest;
 	}
 
 	/**

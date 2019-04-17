@@ -32,10 +32,11 @@ mocha_1.describe("AccessLogger", () => {
         mocha_1.afterEach(() => transport.transport.resetHistory());
         mocha_1.it("should skip request if skip:true and not call transport", skipsRequest);
         mocha_1.it("should skip request if act is null and not call transport", skipsRequestActNull);
-        mocha_1.it("should send to the transport the correct http method, remote ip, path and response code", sendsCorrectInfo),
-            mocha_1.it("should send transport request info and query parameters", sendsQuery);
+        mocha_1.it("should send to the transport the correct http method, remote ip, path and response code", sendsCorrectInfo);
+        mocha_1.it("should send transport request info and query parameters", sendsQuery);
         mocha_1.it("should send transport user-agent header and user data", sendsUaAndUserData);
         mocha_1.it("should send transport the request body and all request headers", sendsBodyAndAllHeaders);
+        mocha_1.it("should send transport tht response headers", sendsResponseHeaders);
         mocha_1.after(mockApp.stop);
     });
 });
@@ -92,7 +93,7 @@ function sendsUaAndUserData() {
 }
 function sendsBodyAndAllHeaders() {
     return __awaiter(this, void 0, void 0, function* () {
-        const PATH = "/test_body_headers";
+        const PATH = "/test_req_body_headers";
         const METHOD = "POST";
         const HEADERS = {
             'user-agent': 'JamesBond/1.3 Gecko/0.9',
@@ -116,6 +117,31 @@ function sendsBodyAndAllHeaders() {
             response: {
                 code: 200,
                 responseTime: sinon_1.match.number,
+            }
+        });
+    });
+}
+function sendsResponseHeaders() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const PATH = "/test_res_headers";
+        const METHOD = "GET";
+        yield request({
+            method: METHOD,
+            url: `${URL}${PATH}`,
+        });
+        expect(transport.transport).to.have.been.calledWith({
+            request: {
+                method: METHOD,
+                path: PATH,
+                remote_address: HOST,
+            },
+            response: {
+                code: 200,
+                responseTime: sinon_1.match.number,
+                headers: sinon_1.match.has("pragma", "no-cache")
+                    .and(sinon_1.match.has("x-powered-by", "nodejs"))
+                    .and(sinon_1.match.has("content-type", sinon_1.match(/application\/json.*/)))
+                    .and(sinon_1.match.has("content-length", sinon_1.match(/[0-9]*/)))
             }
         });
     });
@@ -231,6 +257,16 @@ const rules = [
             set: {
                 request: {
                     body: true,
+                    headers: true,
+                }
+            }
+        }
+    },
+    {
+        path: "/test_res_headers",
+        do: {
+            set: {
+                response: {
                     headers: true,
                 }
             }
