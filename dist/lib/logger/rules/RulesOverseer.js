@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const Generic_1 = require("../../util/Generic");
+const Parsing_1 = require("../../util/Parsing");
 const RulesNormalize_1 = require("./RulesNormalize");
 const mergeWith = require("lodash.mergewith");
 class RulesOverseer {
@@ -9,7 +9,7 @@ class RulesOverseer {
         this.trimSlash = trimSlash;
     }
     computeRouteAct(req, res) {
-        const path = Generic_1.cleanUrl(req.originalUrl || req.url, this.trimSlash);
+        const path = Parsing_1.cleanUrl(req.originalUrl || req.url, this.trimSlash);
         const matchedRules = this.getRulesMatched(path, req, res).sort(priorityCompare);
         // console.log(matchedRules.map((r:any)=>[r._originalPath,JSON.stringify(r.do.set)]));
         const acts = matchedRules.map(rule => rule.do);
@@ -78,9 +78,9 @@ function contentTypeRuleMatches(contentType, contentTypeRule) {
     if (contentType === undefined)
         return false;
     if (Array.isArray(contentTypeRule)) {
-        return contentTypeRule.some(rule => Generic_1.mimeMatch(contentType, rule));
+        return contentTypeRule.some(rule => Parsing_1.mimeMatch(contentType, rule));
     }
-    return Generic_1.mimeMatch(contentType, contentTypeRule);
+    return Parsing_1.mimeMatch(contentType, contentTypeRule);
 }
 /**
  * @return true if the status code matches the StatusCodeRule
@@ -101,7 +101,7 @@ function statusCodeAtomMatches(code, ruleAtom) {
         return ruleAtom === code;
     }
     else if (typeof ruleAtom === "string") {
-        return Generic_1.wildcardNumberMatch(code, ruleAtom);
+        return Parsing_1.wildcardNumberMatch(code, ruleAtom);
     }
     return false;
 }

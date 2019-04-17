@@ -1,4 +1,4 @@
-import {IAccessLogTransport} from "./AccessLogTransport";
+import IAccessLogTransport from "./AccessLogTransport";
 import AccessLogEntry from "../../domain/access-log/AccessLogEntry";
 
 export default class ConsoleAccessLog implements IAccessLogTransport{

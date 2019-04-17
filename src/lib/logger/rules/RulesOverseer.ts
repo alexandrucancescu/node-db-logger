@@ -1,5 +1,5 @@
 import RouteRule, {Act, ContentTypeRule, StatusCodeRule} from "../../domain/access-log/RouteRule";
-import {cleanUrl, mimeMatch, wildcardNumberMatch} from "../../util/Generic";
+import {cleanUrl, mimeMatch, wildcardNumberMatch} from "../../util/Parsing";
 import normalizeRules from "./RulesNormalize";
 import {Request,Response} from "express"
 import * as mergeWith from "lodash.mergewith"

@@ -1,6 +1,7 @@
 import PublicRouteRule, {Path} from "../../domain/access-log/RouteRule";
 import {access as debug} from "../../util/DebugLog";
-import {cleanUrl, deleteProp, getProp} from "../../util/Generic";
+import {cleanUrl} from "../../util/Parsing";
+import {deleteProp, getProp} from "../../util/Generic";
 import * as isGlob from "is-glob"
 import {makeRe as globToRegex} from "micromatch"
 import RuleValidationError from "./RuleValidationError";

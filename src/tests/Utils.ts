@@ -1,6 +1,8 @@
 import {describe,it} from "mocha"
 import {expect} from "chai"
-import {mimeMatch,cleanUrl,wildcardNumberMatch,getProp,deleteProp} from "../lib/util/Generic";
+import {getProp,deleteProp} from "../lib/util/Generic";
+import {mimeMatch,cleanUrl,wildcardNumberMatch,timeStringToMs} from "../lib/util/Parsing";
+
 
 describe("Util functions",()=>{
 	describe("Wildcard mime match",()=>{
@@ -24,7 +26,23 @@ describe("Util functions",()=>{
 		it("should delete the right property",deletesCorrectProp);
 		it("should return false when property does not exist",deletePropReturnsFalse)
 	});
+	describe("Time string to ms",()=>{
+		it("should return the right ms representation of time string",returnsRightTimeMs)
+		it("should return null for invalid time string",returnsNullForInvalidTimeStrings)
+	});
 });
+
+function returnsNullForInvalidTimeStrings(){
+	expect(timeStringToMs("10")).to.be.null;
+	expect(timeStringToMs("..m")).to.be.null;
+	expect(timeStringToMs(33 as any)).to.be.null;
+}
+
+function returnsRightTimeMs(){
+	expect(timeStringToMs("10m")).to.be.approximately(600000,0.001);
+	expect(timeStringToMs("10.1s")).to.be.approximately(10100,0.001);
+	expect(timeStringToMs("10yr")).to.be.approximately(3.154e+11,1e11);
+}
 
 function deletePropReturnsFalse(){
 	const obj={

@@ -1,6 +1,7 @@
 import {RequestHandler,Request,Response,NextFunction} from "express"
 import * as onRequestFinished from "on-finished";
-import {cleanIp, cleanUrl, getProcessTimeMs} from "../util/Generic";
+import {getProcessTimeMs} from "../util/Generic";
+import {cleanIp, cleanUrl} from "../util/Parsing";
 import {IAccessLogTransport} from "../transports/access_log/AccessLogTransport"
 import RulesOverseer from "./rules/RulesOverseer";
 import RouteRule, {Act} from "../domain/access-log/RouteRule";

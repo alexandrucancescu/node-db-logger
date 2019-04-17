@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const DebugLog_1 = require("../../util/DebugLog");
+const Parsing_1 = require("../../util/Parsing");
 const Generic_1 = require("../../util/Generic");
 const isGlob = require("is-glob");
 const micromatch_1 = require("micromatch");
@@ -53,7 +54,7 @@ function normalizePath(rule, trimSlash = true) {
             rule.path = micromatch_1.makeRe(rule.path);
         }
         else {
-            rule.path = Generic_1.cleanUrl(rule.path, trimSlash);
+            rule.path = Parsing_1.cleanUrl(rule.path, trimSlash);
         }
     }
     else if (!(rule.path instanceof RegExp)) {

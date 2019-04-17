@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const onRequestFinished = require("on-finished");
 const Generic_1 = require("../util/Generic");
+const Parsing_1 = require("../util/Parsing");
 const RulesOverseer_1 = require("./rules/RulesOverseer");
 const AccessLogConfig_1 = require("../domain/access-log/AccessLogConfig");
 const DebugLog_1 = require("../util/DebugLog");
@@ -74,11 +75,11 @@ class AccessLogger {
         return entryResponse;
     }
     computeEntryRequest(act, req, res) {
-        const path = Generic_1.cleanUrl(req.originalUrl || req.url, this.config.removeTrailingSlash);
+        const path = Parsing_1.cleanUrl(req.originalUrl || req.url, this.config.removeTrailingSlash);
         const entryRequest = {
             method: req.method.toUpperCase(),
             path,
-            remote_address: Generic_1.cleanIp(req.connection.remoteAddress)
+            remote_address: Parsing_1.cleanIp(req.connection.remoteAddress)
         };
         if (act.set && act.set.request) {
             if (act.set.request.query == true && req.query) {
