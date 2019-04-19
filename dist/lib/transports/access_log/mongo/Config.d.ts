@@ -10,22 +10,21 @@ export interface StructureConfig {
     };
 }
 export interface DatabaseConnection {
-    host?: string;
-    port?: string;
-    user: string;
+    user?: string;
     pass?: string;
     database?: string;
-    connectionString?: string;
+    connectionString: string;
 }
-export default interface TransportConfig {
+export interface TransportConfig {
     connection: DatabaseConnection;
     structure: StructureConfig;
-    keepLogsFor?: string;
+    keepLogsFor?: string | number;
     stackBeforeStoring?: boolean;
-    stackSize?: boolean;
-    fallback: TransportFallback;
+    stackSize?: number;
+    fallback?: TransportFallback;
 }
 export declare enum TransportFallback {
     FILE = 0,
     MEMORY = 1
 }
+export default function parseConfig(config: TransportConfig): TransportConfig;

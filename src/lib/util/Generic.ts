@@ -46,6 +46,16 @@ export function getProp(of:AnyObject,prop:string):any{
 }
 
 /**
+ * @summary Wrap a promise so that it cannot be rejected
+ * @param promise
+ */
+export function wrapPromise<T>(promise:Promise<T>):Promise<T>{
+	return new Promise<T>(resolve => {
+		promise.then(resolve).catch(resolve);
+	})
+}
+
+/**
  * @returns process time in ms
  */
 export function getProcessTimeMs():number{

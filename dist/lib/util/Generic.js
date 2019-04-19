@@ -41,6 +41,16 @@ function getProp(of, prop) {
 }
 exports.getProp = getProp;
 /**
+ * @summary Wrap a promise so that it cannot be rejected
+ * @param promise
+ */
+function wrapPromise(promise) {
+    return new Promise(resolve => {
+        promise.then(resolve).catch(resolve);
+    });
+}
+exports.wrapPromise = wrapPromise;
+/**
  * @returns process time in ms
  */
 function getProcessTimeMs() {

@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const Generic_1 = require("../util/Generic");
 class UnhandledExceptionHook {
     static mount(exitAfter = true) {
         if (this.isMounted)
@@ -24,7 +25,7 @@ class UnhandledExceptionHook {
                 try {
                     const promise = handler(error);
                     if (promise instanceof Promise) {
-                        promises.push(this.wrapPromise(promise));
+                        promises.push(Generic_1.wrapPromise(promise));
                     }
                 }
                 catch (e) { }
@@ -35,11 +36,6 @@ class UnhandledExceptionHook {
             if (this.exitAfter) {
                 process.exit(1);
             }
-        });
-    }
-    static wrapPromise(promise) {
-        return new Promise(resolve => {
-            promise.then(resolve).catch(resolve);
         });
     }
     static addObserver(observer) {

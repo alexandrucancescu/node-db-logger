@@ -1,11 +1,6 @@
-declare type ExceptionObserver = (err: Error) => void | Promise<void>;
-export default class UnhandledExceptionHook {
-    private static observers;
+export default class ShutdownHook {
+    private static handlers;
     private static isMounted;
-    private static exitAfter;
-    static mount(exitAfter?: boolean): void;
-    private static onException;
-    private static wrapPromise;
-    static addObserver(observer: ExceptionObserver): void;
+    private static mount;
+    private static onShutdown;
 }
-export {};

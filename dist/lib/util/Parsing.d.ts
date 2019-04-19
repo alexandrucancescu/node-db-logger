@@ -1,3 +1,8 @@
+/**
+ * @summary Converts a string representing a time value with a unit of measure to ms
+ * @param {string} time represented by a value and a unit: '1ms' or '24h'
+ * @returns {number} time in ms
+ */
 export declare function timeStringToMs(time: string): number;
 /**
  * @summary Checks if the IP is a wrapped IPv4 represented as IPv6

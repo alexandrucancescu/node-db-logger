@@ -5,7 +5,6 @@ export default class UnhandledExceptionHook {
     private static exitAfter;
     static mount(exitAfter?: boolean): void;
     private static onException;
-    private static wrapPromise;
     static addObserver(observer: ExceptionObserver): void;
 }
 export {};

@@ -1,1 +1,1 @@
-{"version":3,"file":"MongoTransport.js","sourceRoot":"","sources":["../../../../../src/lib/transports/access_log/mongo/MongoTransport.ts"],"names":[],"mappings":";;;;;;;;;;AAIA,MAAqB,cAAc;IAG5B,SAAS,CAAC,KAAqB;;YACpC,OAAO,SAAS,CAAC;QAClB,CAAC;KAAA;CAED;AAPD,iCAOC"}
+{"version":3,"file":"MongoTransport.js","sourceRoot":"","sources":["../../../../../src/lib/transports/access_log/mongo/MongoTransport.ts"],"names":[],"mappings":";;;;;;;;;;AAIA,MAAqB,cAAc;IAI5B,SAAS,CAAC,KAAqB;;YACpC,OAAO,SAAS,CAAC;QAClB,CAAC;KAAA;CAED;AARD,iCAQC"}

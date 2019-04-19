@@ -1,6 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const ipaddr_js_1 = require("ipaddr.js");
+/**
+ * @summary Converts a string representing a time value with a unit of measure to ms
+ * @param {string} time represented by a value and a unit: '1ms' or '24h'
+ * @returns {number} time in ms
+ */
 function timeStringToMs(time) {
     const regex = /^(\d+\.?\d*)(ms|s|m|h|d|w|mo|yr)$/gi;
     const parts = regex.exec(time);

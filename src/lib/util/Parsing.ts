@@ -1,5 +1,10 @@
 import {IPv6} from "ipaddr.js";
 
+/**
+ * @summary Converts a string representing a time value with a unit of measure to ms
+ * @param {string} time represented by a value and a unit: '1ms' or '24h'
+ * @returns {number} time in ms
+ */
 export function timeStringToMs(time:string):number{
 	const regex = /^(\d+\.?\d*)(ms|s|m|h|d|w|mo|yr)$/gi;
 

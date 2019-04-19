@@ -8,48 +8,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-class UnhandledExceptionHook {
-    static mount(exitAfter = true) {
+const Generic_1 = require("../util/Generic");
+class ShutdownHook {
+    static mount() {
         if (this.isMounted)
             return;
-        this.exitAfter = exitAfter;
-        process.on("uncaughtException", this.onException.bind(this));
+        process.on("beforeExit", this.onShutdown.bind(this));
         this.isMounted = true;
     }
-    static onException(error) {
+    static onShutdown() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("beforeExit");
             const promises = [];
-            while (this.observers.length > 0) {
-                const handler = this.observers.shift();
+            while (this.handlers.length > 0) {
+                const handler = this.handlers.shift();
                 try {
-                    const promise = handler(error);
+                    const promise = handler();
                     if (promise instanceof Promise) {
-                        promises.push(this.wrapPromise(promise));
+                        promises.push(Generic_1.wrapPromise(promise));
                     }
                 }
                 catch (e) { }
             }
-            if (promises.length > 0) {
-                yield Promise.all(promises);
-            }
-            if (this.exitAfter) {
-                process.exit(1);
-            }
+            yield Promise.all(promises);
         });
-    }
-    static wrapPromise(promise) {
-        return new Promise(resolve => {
-            promise.then(resolve).catch(resolve);
-        });
-    }
-    static addObserver(observer) {
-        if (this.observers.indexOf(observer) > -1)
-            return;
-        this.observers.push(observer);
     }
 }
-UnhandledExceptionHook.observers = [];
-UnhandledExceptionHook.isMounted = false;
-UnhandledExceptionHook.exitAfter = true;
-exports.default = UnhandledExceptionHook;
+ShutdownHook.handlers = [];
+ShutdownHook.isMounted = false;
+exports.default = ShutdownHook;
 //# sourceMappingURL=ShutdownHook.js.map

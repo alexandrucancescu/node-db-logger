@@ -1,3 +1,4 @@
+import {wrapPromise} from "../util/Generic";
 
 type ExceptionObserver=(err:Error)=>void|Promise<void>;
 
@@ -20,7 +21,7 @@ export default class UnhandledExceptionHook{
 			try{
 				const promise=handler(error);
 				if(promise instanceof Promise){
-					promises.push(this.wrapPromise(promise));
+					promises.push(wrapPromise(promise));
 				}
 			}catch (e) {}
 		}
@@ -31,12 +32,6 @@ export default class UnhandledExceptionHook{
 		if(this.exitAfter){
 			process.exit(1);
 		}
-	}
-
-	private static wrapPromise<T>(promise:Promise<T>):Promise<T>{
-		return new Promise<T>(resolve => {
-			promise.then(resolve).catch(resolve);
-		})
 	}
 
 	public static addObserver(observer:ExceptionObserver){
